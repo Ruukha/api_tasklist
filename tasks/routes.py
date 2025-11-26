@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 import csv
+import os
 
 PATH = "tasks.csv"
 DELIMITER = ","
@@ -11,6 +12,7 @@ COLUMNS = {
     "date": 3,
     "expiry": 4
 }
+HEADERS = [x for x in COLUMNS.keys()]
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
 
@@ -35,6 +37,12 @@ def find_row(id, pos=COLUMNS["id"], path=PATH):
         file.close()
 
     return -1, []
+
+def check_headers():
+    if not os.path.exists(PATH):
+        with open(PATH, 'w') as file:
+            writer = csv.writer(file)
+            writer.writerow(COLUMNS)
 
 @tasks_bp.route('/')
 def home():
@@ -61,11 +69,12 @@ class Tasklist:
 
         except Exception as e:
             return e, 500
-            
-        return ret, 200
+        
+        return ret, 200 if ret else 204
 
     @tasks_bp.route("/add", methods=["POST"])
     def add(self):
+        check_headers()
         name = request.json.get("name")
         desc = request.json.get("description")
         date = request.json.get("date")
@@ -81,7 +90,7 @@ class Tasklist:
         except Exception as e:
             return e, 500
         
-        return 200
+        return 201
 
 
     @tasks_bp.route("/delete", methods=["DELETE"])
@@ -100,6 +109,7 @@ class Tasklist:
              
             with open(PATH, "w") as file:
                 writer = csv.writer(file)
+                writer.writerow(HEADERS)
                 writer.writerows(new)
 
 
