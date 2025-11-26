@@ -9,11 +9,43 @@ jwt = JWTManager(app)
 PATH = "tasks.csv"
 DELIMITER = ","
 
+COLUMNS = {
+    "id": 0,
+    "name": 1,
+    "desciption": 2,
+    "date": 3,
+    "expiry": 4
+}
+
+def find_row(id, pos=COLUMNS["id"], path=PATH):
+    """
+    Returns the index and row in which the first appeareance of id is found in column pos for the file path
+    Returns -1 and empty list if not found
+    
+    :param id: What you want to find
+    :param pos: In which column you want to make the search (defaults to 0)
+    :param path: Location of the file you want to search (defaults to PATH)
+    """
+    with open(path, "r") as file:
+        reader = csv.reader(file)
+        nrow = 0
+        for row in reader:
+            if row[pos] == id:
+                file.close()
+                return nrow, row
+            nrow += 1
+
+        file.close()
+
+    return -1, []
+
 @app.route('/')
 def home():
     return "Home", 200
 
-class Task:
+class Tasklist:
+    last_id = 0
+
     @app.route("/get", methods=["GET"])
     def get():
         try:
@@ -25,16 +57,18 @@ class Task:
                     if line_count == 0:
                         line_count += 1
                         continue
-                    ret += row[0] + "<br>"
+                    ret += row[COLUMNS["name"]] + "<br>"
                     line_count += 1
                 
                 file.close()
-            return ret, 200
+
         except Exception as e:
             return e, 500
+            
+        return ret, 200
 
     @app.route("/add", methods=["POST"])
-    def add():
+    def add(self):
         name = request.json.get("name")
         desc = request.json.get("description")
         date = request.json.get("date")
@@ -42,20 +76,15 @@ class Task:
             
         try:
             with open(PATH, "a") as file:
-                last_id = ""
-                for c in file.readlines()[-1]:
-                    if c == DELIMITER:
-                        break
-                    last_id += c
-
-                last_id = int(last_id)
                 writer = csv.writer(PATH)
-                writer.writerow([last_id+1, name, desc, date, expiry])
+                writer.writerow([self.last_id+1, name, desc, date, expiry])
+                self.last_id += 1
                 file.close()
-            return 200
         
         except Exception as e:
             return e, 500
+        
+        return 200
 
 
     @app.route("/delete", methods=["DELETE"])
@@ -67,17 +96,48 @@ class Task:
                 reader = csv.reader(file)
                 writer = csv.writer(file)
 
-                for row in reader:
-                    if row[0] == id:
-                        pass
+                rows = list(reader)
+                new = rows[:id] + rows[id+1:]
+
+                writer.writerows(new)
+                file.close()
+
 
         except Exception as e:
             return e, 500
 
+        return 204
 
     @app.route("/update", methods=["UPDATE"])
     def update():
-        pass
+        id = request.json.get("id")
+        name = request.json.get("name")
+        desc = request.json.get("description")
+        date = request.json.get("date")
+        expiry = request.json.get("expiry")
+        task = [id, name, desc, date, expiry]
+
+        nrow, line = find_row(id)
+        for i in task:
+            if i is None:
+                continue
+            line[line.index(i)] = task[i]
+
+        try:
+            with open(PATH, '+') as file:
+                reader = csv.reader(file)
+                rows = list(reader)
+                new = rows[:nrow] + line + rows[nrow+1:]
+
+                writer = csv.writer(file)
+                writer.writerows(new)
+
+                file.close()
+
+        except Exception as e:
+            return e, 500
+        
+        return 205
 
 if __name__ == '__main__':
     app.run(debug=False)
