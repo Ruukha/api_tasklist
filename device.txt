@@ -1,0 +1,7 @@
+The physical device is formed by an ESP32, a screen, a rotary encoder and a button.
+The rotary encoder and button serve as user inputs to the screen. 
+    Moving the encoder clockwise or counter-clockwise will change the selected task.
+    Clicking the encoder will mark the selected task as completed.
+    Clicking the button will just turn on or off the screen (not the device, just the peripherics. To turn off the device you should just disconnect it.)
+
+I will try to explain how the device is set up in the near future.
