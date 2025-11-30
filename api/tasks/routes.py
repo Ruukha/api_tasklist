@@ -12,12 +12,14 @@ COLUMNS = {HEADERS[x]: x for x in range(len(HEADERS))}
 from tasks.helpers import *
 last_id = get_last_id()
 last_update = datetime.now()
+unix_last_update = last_update.timestamp()
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
 
 def update():
-    global last_update
+    global last_update, unix_last_update
     last_update = datetime.now()
+    unix_last_update = last_update.timestamp()
 
 @tasks_bp.route("/", methods=["GET"])
 def get():
@@ -164,4 +166,7 @@ def patch(id):
 @tasks_bp.route("/last_update", methods=["GET"])
 def last_upd():
     global last_update
-    return {"last_update": str(last_update)}
+    return {
+        "last_update": str(last_update),
+        "unix_last_update": unix_last_update
+        }
