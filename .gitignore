@@ -1,3 +1,5 @@
 api/tasks/__pycache__/
 .venv/
 .vscode/
+client/.vscode/
+client/build/

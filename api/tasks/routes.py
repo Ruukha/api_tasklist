@@ -37,7 +37,7 @@ def get():
         return {"error": str(e)}, 500
     
     if rows != []:
-        return rows_to_json(rows), 200
+        return rows_to_json(rows, simple=True), 200
     return "", 204
 
 @tasks_bp.route("/<id>", methods=["GET"])

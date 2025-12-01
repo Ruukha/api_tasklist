@@ -68,11 +68,17 @@ def row_to_json(row):
     task = {i: row[COLUMNS[i]] for i in HEADERS}
     return task
 
-def rows_to_json(rows):
+def rows_to_json(rows, simple=False):
     if not rows:
         return {}
-    tasks = {
-            row[COLUMNS["id"]]: row_to_json(row)
+    if not simple:
+        tasks = {
+                row[COLUMNS["id"]]: row_to_json(row)
+                for row in rows
+            }
+    else:
+        tasks = {
+            row[COLUMNS["id"]]: row[COLUMNS["name"]]
             for row in rows
         }
     return tasks
