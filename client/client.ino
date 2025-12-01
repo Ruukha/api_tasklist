@@ -14,11 +14,18 @@ time_t last_cached_update;
 void setup() {
   Serial.begin(115200);
   tft.setCursor(0, 0);
+  pinMode(TFT_CS, OUTPUT);
+  pinMode(TFT_RST, OUTPUT);
+  pinMode(TFT_DC, OUTPUT);
+  pinMode(TFT_SDI, OUTPUT);
+  pinMode(TFT_SCK, OUTPUT);
+  pinMode(TFT_LED, OUTPUT);
+  pinMode(BTN, INPUT_PULLUP);
 
   WiFi.begin(SSID, password);
   while (WiFi.status() != WL_CONNECTED){
     Serial.print("Trying to connect...\n");
-    delay(500);
+    DELAY_MS(500);
   }
 
   get_last_update();
@@ -26,12 +33,44 @@ void setup() {
 }
 
 void loop() {
-  static time_t ms = millis();
-  if ((millis() - ms) > DELAY){
-    ms = millis();
-    get_last_update();
-    if (last_update > last_cached_update){
-      update(tft);
+  static bool on = false;
+  static time_t last_debouce = millis();
+  static int btn_state = HIGH;
+  static int last_btn_state = HIGH;
+
+  btn_state = digitalRead(BTN);
+  //button switch
+  if (btn_state != last_btn_state){
+    last_debounce = millis();
+  }
+  if ((millis() - last_debounce) > DEBOUNCE_MS){
+    if (btn_state == HIGH && last_btn_state == LOW){
+      on = !on;
+      digitalWrite(TFT_LED, on);
+    }
+    last_btn_state = btn_state;
+  }
+
+  if (on){
+    if (btn_state != last_btn_state){
+    last_debounce = millis();
+    }
+    if ((millis() - last_debounce) > DEBOUNCE_MS){
+      if (btn_state == HIGH && last_btn_state == LOW){
+        on = !on;
+        digitalWrite(TFT_LED, on);
+      }
+      last_btn_state = btn_state;
+    }
+
+    static time_t ms = millis();
+    //update
+    if ((millis() - ms) > DELAY_MS){
+      ms = millis();
+      get_last_update();
+      if (last_update > last_cached_update){
+        update(tft);
+      }
     }
   }
 }

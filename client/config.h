@@ -5,6 +5,7 @@
 extern const char* SSID; //Wifi name
 extern const char* password; //Wifi password
 extern const int TEXT_SIZE;
+extern const int HOLD_MS;
 
 //server variables
 extern const char* IP; //server IP
@@ -17,9 +18,9 @@ extern const int TFT_SDI;
 extern const int TFT_SCK;
 extern const int TFT_LED;
 extern const int BTN;
-extern const int DEBOUNCE_MS;
 
 //code utilities
+extern const int DEBOUNCE_MS;
 extern const int DELAY; //measured in ms
 extern time_t last_update;
 extern time_t last_cached_update;

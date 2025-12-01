@@ -4,7 +4,8 @@
 //user variable definitions
 const char* SSID = ""; //Wifi name
 const char* password = ""; //Wifi password
-const int TEXT_SIZE = 3;
+const int TEXT_SIZE = 3; //Default: 3
+const int HOLD_MS = 3000; //Default: 3000
 
 //server variable definitions
 const char* IP = "http://127.0.0.1:5000"; //server IP
@@ -20,4 +21,4 @@ const int BTN = 32;
 const int DEBOUNCE_MS = 50;
 
 //code utilities definitions
-const int DELAY = 60000; //measured in ms
+const int DELAY_MS = 60000; //default: 60000
