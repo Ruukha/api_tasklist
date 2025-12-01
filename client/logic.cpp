@@ -7,10 +7,11 @@
 
 void update(Adafruit_ILI9341 tft){
   HTTPClient http;
-  http.begin(IP + "/tasks");
+  http.begin(String(IP) + "/tasks");
   int code = http.GET();
   if (code == 200){
     String payload = http.getString();
+    http.end();
     StaticJsonDocument<4096> doc; 
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
@@ -25,24 +26,24 @@ void update(Adafruit_ILI9341 tft){
       draw_task(id, name, tft);
     }
   }
-  http.end();
+  else http.end();
 
   last_cached_update = time(nullptr);
 }
 
 void get_last_update(){
   HTTPClient http;
-  http.begin(IP + "/tasks/last_update");
+  http.begin(String(IP) + "/tasks/last_update");
   int code = http.GET();
   if (code == 200){
     String payload = http.getString();
+    http.end();
     StaticJsonDocument<128> doc; 
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
         Serial.printf("JSON parse failed!: %s\n", error);
-        return;
     }
     last_update = doc["updated_at"];
   }
-  http.end();
+  else http.end();
 }

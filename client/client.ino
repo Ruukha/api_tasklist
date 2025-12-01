@@ -9,6 +9,8 @@
 #include "config.h"
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+time_t last_update;
+time_t last_cached_update;
 void setup() {
   Serial.begin(115200);
   tft.setCursor(0, 0);
@@ -19,6 +21,7 @@ void setup() {
     delay(500);
   }
 
+  get_last_update();
   update(tft);
 }
 

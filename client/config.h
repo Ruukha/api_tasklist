@@ -1,27 +1,25 @@
 #pragma once
 #include <Arduino.h>
 
-//user variable definitions
-const char* SSID = ""; //Wifi name
-const char* password = ""; //Wifi password
-int TEXT_SIZE = 3;
+//user variables
+extern const char* SSID; //Wifi name
+extern const char* password; //Wifi password
+extern const int TEXT_SIZE;
 
-//server variable definitions
-const String BASE = "http://127.0.0.1"; //server IP
-const String PORT = "5000";
-const String IP = BASE + ":" + PORT;
+//server variables
+extern const char* IP; //server IP
 
 //pin definitions
-constexpr int TFT_CS = 5;
-constexpr int TFT_RST = 4;
-constexpr int TFT_DC = 17;
-constexpr int TFT_SDI = 23;
-constexpr int TFT_SCK = 18;
-constexpr int TFT_LED = 2;
-constexpr int BTN = 32;
-constexpr int DEBOUNCE_MS = 50;
+extern const int TFT_CS;
+extern const int TFT_RST;
+extern const int TFT_DC;
+extern const int TFT_SDI;
+extern const int TFT_SCK;
+extern const int TFT_LED;
+extern const int BTN;
+extern const int DEBOUNCE_MS;
 
-//code utilities definitions
-const int DELAY = 60000; //measured in ms
-time_t last_update;
-time_t last_cached_update;
+//code utilities
+extern const int DELAY; //measured in ms
+extern time_t last_update;
+extern time_t last_cached_update;
