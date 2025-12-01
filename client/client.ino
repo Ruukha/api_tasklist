@@ -25,7 +25,7 @@ void setup() {
   WiFi.begin(SSID, password);
   while (WiFi.status() != WL_CONNECTED){
     Serial.print("Trying to connect...\n");
-    DELAY_MS(500);
+    delay(500);
   }
 
   get_last_update();
@@ -34,7 +34,7 @@ void setup() {
 
 void loop() {
   static bool on = false;
-  static time_t last_debouce = millis();
+  static time_t last_debounce = millis();
   static int btn_state = HIGH;
   static int last_btn_state = HIGH;
 

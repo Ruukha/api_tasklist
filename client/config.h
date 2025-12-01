@@ -21,6 +21,6 @@ extern const int BTN;
 
 //code utilities
 extern const int DEBOUNCE_MS;
-extern const int DELAY; //measured in ms
+extern const int DELAY_MS; //measured in ms
 extern time_t last_update;
 extern time_t last_cached_update;
