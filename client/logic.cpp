@@ -7,8 +7,9 @@
 
 void update(Adafruit_ILI9341 &tft){
   HTTPClient http;
-  http.begin(String(IP) + "/tasks");
+  http.begin(String(IP) + "/tasks/");
   int code = http.GET();
+  Serial.printf("HTTP status code: %d\n", code);
   if (code == 200){
     String payload = http.getString();
     http.end();
@@ -28,7 +29,7 @@ void update(Adafruit_ILI9341 &tft){
   }
   else http.end();
 
-  last_cached_update = time(nullptr);
+  last_cached_update = last_update;
 }
 
 void get_last_update(){

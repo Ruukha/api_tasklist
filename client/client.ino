@@ -13,6 +13,7 @@ time_t last_update;
 time_t last_cached_update;
 void setup() {
   Serial.begin(115200);
+  Serial.println("Starting initialisation...");
   tft.setCursor(0, 0);
   pinMode(TFT_CS, OUTPUT);
   pinMode(TFT_RST, OUTPUT);
@@ -26,11 +27,12 @@ void setup() {
   init_screen(tft);
   digitalWrite(TFT_LED, HIGH);
 
-  WiFi.begin(SSID, password);
-  while (WiFi.status() != WL_CONNECTED){
+  do{
     Serial.print("Trying to connect...\n");
+    WiFi.begin(SSID, password);
+    Serial.printf("Wifi status: %d\n", WiFi.status());
     delay(5000);
-  }
+  }while (WiFi.status() != WL_CONNECTED);
   Serial.print("Successfully connected!\n");
 
   get_last_update();
@@ -49,7 +51,7 @@ void loop() {
   //button switch
   btn_state = digitalRead(BTN);
   if ((millis() - last_debounce) > DEBOUNCE_MS){
-    if (btn_state == LOW && last_btn_state == HIGH){
+    if (btn_state == HIGH && last_btn_state == LOW){
       on = !on;
       digitalWrite(TFT_LED, on);
     }
@@ -64,8 +66,8 @@ void loop() {
     if ((millis() - ms) > DELAY_MS){
       ms = millis();
       get_last_update();
-      Serial.printf("Last update/cache time: %d, %d\n", last_update, last_cached_update);
       if (last_update > last_cached_update){
+        Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
         Serial.print("New update available\n");
         update(tft);
       }
