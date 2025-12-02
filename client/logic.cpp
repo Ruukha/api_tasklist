@@ -43,7 +43,7 @@ void get_last_update(){
     if (error) {
         Serial.printf("JSON parse failed!: %s\n", error);
     }
-    last_update = doc["updated_at"];
+    last_update = doc["unix_last_update"];
   }
   else http.end();
 }

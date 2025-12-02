@@ -44,6 +44,7 @@ void loop() {
   static unsigned long last_debounce = millis();
   static int btn_state = HIGH;
   static int last_btn_state = HIGH;
+  static unsigned long ms = millis();
 
   //button switch
   btn_state = digitalRead(BTN);
@@ -59,11 +60,11 @@ void loop() {
   last_btn_state = btn_state;
 
   if (on){
-    static unsigned long ms = millis();
     //update
     if ((millis() - ms) > DELAY_MS){
       ms = millis();
       get_last_update();
+      Serial.printf("Last update/cache time: %d, %d\n", last_update, last_cached_update);
       if (last_update > last_cached_update){
         Serial.print("New update available\n");
         update(tft);

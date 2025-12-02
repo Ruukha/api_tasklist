@@ -32,5 +32,6 @@ void init_screen(Adafruit_ILI9341 &tft){
 
 void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
 {
+    Serial.println("Drawing task: " + id + ": " + name);
     tft.println(id + ": " + name);
 }
