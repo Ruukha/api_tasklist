@@ -5,7 +5,7 @@
 #include "screen.h"
 #include "config.h"
 
-void update(Adafruit_ILI9341 tft){
+void update(Adafruit_ILI9341 &tft){
   HTTPClient http;
   http.begin(String(IP) + "/tasks");
   int code = http.GET();

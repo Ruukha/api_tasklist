@@ -21,54 +21,51 @@ void setup() {
   pinMode(TFT_SCK, OUTPUT);
   pinMode(TFT_LED, OUTPUT);
   pinMode(BTN, INPUT_PULLUP);
+  digitalWrite(BTN, HIGH);
+
+  init_screen(tft);
+  digitalWrite(TFT_LED, HIGH);
 
   WiFi.begin(SSID, password);
   while (WiFi.status() != WL_CONNECTED){
     Serial.print("Trying to connect...\n");
-    delay(500);
+    delay(5000);
   }
+  Serial.print("Successfully connected!\n");
 
   get_last_update();
   update(tft);
+
+  Serial.print("Successfully initialised!\n");
 }
 
 void loop() {
-  static bool on = false;
-  static time_t last_debounce = millis();
+  static bool on = true;
+  static unsigned long last_debounce = millis();
   static int btn_state = HIGH;
   static int last_btn_state = HIGH;
 
-  btn_state = digitalRead(BTN);
   //button switch
-  if (btn_state != last_btn_state){
-    last_debounce = millis();
-  }
+  btn_state = digitalRead(BTN);
   if ((millis() - last_debounce) > DEBOUNCE_MS){
-    if (btn_state == HIGH && last_btn_state == LOW){
+    if (btn_state == LOW && last_btn_state == HIGH){
       on = !on;
       digitalWrite(TFT_LED, on);
     }
-    last_btn_state = btn_state;
   }
+  if (btn_state != last_btn_state){
+    last_debounce = millis();
+  }
+  last_btn_state = btn_state;
 
   if (on){
-    if (btn_state != last_btn_state){
-    last_debounce = millis();
-    }
-    if ((millis() - last_debounce) > DEBOUNCE_MS){
-      if (btn_state == HIGH && last_btn_state == LOW){
-        on = !on;
-        digitalWrite(TFT_LED, on);
-      }
-      last_btn_state = btn_state;
-    }
-
-    static time_t ms = millis();
+    static unsigned long ms = millis();
     //update
     if ((millis() - ms) > DELAY_MS){
       ms = millis();
       get_last_update();
       if (last_update > last_cached_update){
+        Serial.print("New update available\n");
         update(tft);
       }
     }

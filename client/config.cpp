@@ -2,13 +2,13 @@
 #include <Arduino.h>
 
 //user variable definitions
-const char* SSID = ""; //Wifi name
-const char* password = ""; //Wifi password
+const char* SSID = "Willy room"; //Wifi name
+const char* password = "gbiui7Hc"; //Wifi password
 const int TEXT_SIZE = 3; //Default: 3
 const int HOLD_MS = 3000; //Default: 3000
 
 //server variable definitions
-const char* IP = "http://127.0.0.1:5000"; //server IP
+const char* IP = "https://ruukha.pythonanywhere.com"; //server IP
 
 //pin definitions
 const int TFT_CS = 5;
