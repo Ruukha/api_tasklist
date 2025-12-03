@@ -6,6 +6,7 @@
 #include "config.h"
 
 void update(Adafruit_ILI9341 &tft){
+  tft.setCursor(0, 0);
   HTTPClient http;
   http.begin(String(IP) + "/tasks/");
   int code = http.GET();

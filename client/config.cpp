@@ -18,7 +18,7 @@ const int TFT_SDI = 23;
 const int TFT_SCK = 18;
 const int TFT_LED = 2;
 const int BTN = 32;
-const int DEBOUNCE_MS = 50;
 
 //code utilities definitions
+const int DEBOUNCE_MS = 50; //default: 50
 const int DELAY_MS = 60000; //default: 60000

@@ -13,8 +13,6 @@ time_t last_update;
 time_t last_cached_update;
 void setup() {
   Serial.begin(115200);
-  Serial.println("Starting initialisation...");
-  tft.setCursor(0, 0);
   pinMode(TFT_CS, OUTPUT);
   pinMode(TFT_RST, OUTPUT);
   pinMode(TFT_DC, OUTPUT);
@@ -23,7 +21,9 @@ void setup() {
   pinMode(TFT_LED, OUTPUT);
   pinMode(BTN, INPUT_PULLUP);
   digitalWrite(BTN, HIGH);
+  Serial.println("Starting initialisation...");
 
+  tft.setCursor(0, 0);
   init_screen(tft);
   digitalWrite(TFT_LED, HIGH);
 
@@ -45,21 +45,37 @@ void loop() {
   static bool on = true;
   static unsigned long last_debounce = millis();
   static int btn_state = HIGH;
+  static int btn_debounced = HIGH;
   static int last_btn_state = HIGH;
+  static int last_debounced_state = HIGH;
   static unsigned long ms = millis();
+  static unsigned long hold_start = 0;
+  static bool btn_hold = false;
 
   //button switch
   btn_state = digitalRead(BTN);
-  if ((millis() - last_debounce) > DEBOUNCE_MS){
-    if (btn_state == HIGH && last_btn_state == LOW){
-      on = !on;
-      digitalWrite(TFT_LED, on);
-    }
-  }
   if (btn_state != last_btn_state){
+    btn_debounced = btn_state;
     last_debounce = millis();
   }
   last_btn_state = btn_state;
+  if ((millis() - last_debounce) > DEBOUNCE_MS){
+    //Falling edge
+    if (btn_state == LOW && last_debounced_state == HIGH){
+      hold_start = millis();
+      btn_hold = true;
+    }
+    else if (btn_hold && millis() - hold_start >= HOLD_MS){
+      ESP.restart();
+    }
+    //Rising edge
+    else if (btn_state == HIGH && last_debounced_state == LOW){
+      btn_hold = false;
+      on = !on;
+      digitalWrite(TFT_LED, on);
+    }
+    last_debounced_state = btn_debounced;
+  }
 
   if (on){
     //update
