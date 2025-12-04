@@ -11,13 +11,16 @@ extern const int HOLD_MS;
 extern const char* IP; //server IP
 
 //pin definitions
-extern const int TFT_CS;
-extern const int TFT_RST;
-extern const int TFT_DC;
-extern const int TFT_SDI;
-extern const int TFT_SCK;
-extern const int TFT_LED;
-extern const int BTN;
+extern const uint8_t TFT_CS;
+extern const uint8_t TFT_RST;
+extern const uint8_t TFT_DC;
+extern const uint8_t TFT_SDI;
+extern const uint8_t TFT_SCK;
+extern const uint8_t TFT_LED;
+extern const uint8_t BTN_PIN;
+extern const uint8_t ENC_CLK;
+extern const uint8_t ENC_SW;
+extern const uint8_t ENC_DT;
 
 //code utilities
 extern const int DEBOUNCE_MS;

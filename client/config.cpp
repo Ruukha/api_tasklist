@@ -11,13 +11,16 @@ const int HOLD_MS = 3000; //Default: 3000
 const char* IP = "https://ruukha.pythonanywhere.com"; //server IP
 
 //pin definitions
-const int TFT_CS = 5;
-const int TFT_RST = 4;
-const int TFT_DC = 17;
-const int TFT_SDI = 23;
-const int TFT_SCK = 18;
-const int TFT_LED = 2;
-const int BTN = 32;
+const uint8_t TFT_CS = 5;
+const uint8_t TFT_RST = 4;
+const uint8_t TFT_DC = 17;
+const uint8_t TFT_SDI = 23;
+const uint8_t TFT_SCK = 18;
+const uint8_t TFT_LED = 2;
+const uint8_t BTN_PIN = 32;
+const uint8_t ENC_SW = 25;
+const uint8_t ENC_DT = 26;
+const uint8_t ENC_CLK = 27;
 
 //code utilities definitions
 const int DEBOUNCE_MS = 50; //default: 50

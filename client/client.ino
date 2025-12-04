@@ -7,6 +7,7 @@
 #include "logic.h"
 #include "screen.h"
 #include "config.h"
+#include "button.h"
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 time_t last_update;
@@ -19,8 +20,8 @@ void setup() {
   pinMode(TFT_SDI, OUTPUT);
   pinMode(TFT_SCK, OUTPUT);
   pinMode(TFT_LED, OUTPUT);
-  pinMode(BTN, INPUT_PULLUP);
-  digitalWrite(BTN, HIGH);
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  digitalWrite(BTN_PIN, HIGH);
   Serial.println("Starting initialisation...");
 
   tft.setCursor(0, 0);
@@ -41,42 +42,22 @@ void setup() {
   Serial.print("Successfully initialised!\n");
 }
 
+Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
+Button enc_btn = {ENC_CLK, DEBOUNCE_MS, HOLD_MS};
 void loop() {
   static bool on = true;
-  static unsigned long last_debounce = millis();
-  static int btn_state = HIGH;
-  static int btn_debounced = HIGH;
-  static int last_btn_state = HIGH;
-  static int last_debounced_state = HIGH;
-  static unsigned long ms = millis();
-  static unsigned long hold_start = 0;
-  static bool btn_hold = false;
-
+  
   //button switch
-  btn_state = digitalRead(BTN);
-  if (btn_state != last_btn_state){
-    btn_debounced = btn_state;
-    last_debounce = millis();
+  ButtonState btn_state = update(btn);
+  if (btn_state == BUTTON_HOLD){
+    ESP.restart();
   }
-  last_btn_state = btn_state;
-  if ((millis() - last_debounce) > DEBOUNCE_MS){
-    //Falling edge
-    if (btn_state == LOW && last_debounced_state == HIGH){
-      hold_start = millis();
-      btn_hold = true;
-    }
-    else if (btn_hold && millis() - hold_start >= HOLD_MS){
-      ESP.restart();
-    }
-    //Rising edge
-    else if (btn_state == HIGH && last_debounced_state == LOW){
-      btn_hold = false;
-      on = !on;
-      digitalWrite(TFT_LED, on);
-    }
-    last_debounced_state = btn_debounced;
+  else if (btn_state == BUTTON_PRESS){
+    on = !on;
+    digitalWrite(TFT_LED, on);
   }
-
+  
+  static unsigned long ms = millis();
   if (on){
     //update
     if ((millis() - ms) > DELAY_MS){
