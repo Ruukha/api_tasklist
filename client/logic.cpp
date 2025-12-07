@@ -7,8 +7,9 @@
 
 void update(Adafruit_ILI9341 &tft){
   tft.setCursor(0, 0);
+  tft.fillScreen(ILI9341_BLACK);
   HTTPClient http;
-  http.begin(String(IP) + "/tasks/");
+  http.begin(String(IP) + "/tasks");
   int code = http.GET();
   Serial.printf("HTTP status code: %d\n", code);
   if (code == 200){

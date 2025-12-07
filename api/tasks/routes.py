@@ -21,7 +21,7 @@ def update():
     last_update = datetime.now()
     unix_last_update = last_update.timestamp()
 
-@tasks_bp.route("/", methods=["GET"])
+@tasks_bp.route("", methods=["GET"])
 def get():
     name = request.args.get("name")
     if name is not None:

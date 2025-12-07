@@ -9,9 +9,13 @@
 #include "config.h"
 #include "button.h"
 
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 time_t last_update;
 time_t last_cached_update;
+
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+
+Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
+Button enc_btn = {ENC_CLK, DEBOUNCE_MS, HOLD_MS};
 void setup() {
   Serial.begin(115200);
   pinMode(TFT_CS, OUTPUT);
@@ -28,6 +32,9 @@ void setup() {
   init_screen(tft);
   digitalWrite(TFT_LED, HIGH);
 
+  init(btn);
+  init(enc_btn);
+
   do{
     Serial.print("Trying to connect...\n");
     WiFi.begin(SSID, password);
@@ -42,8 +49,6 @@ void setup() {
   Serial.print("Successfully initialised!\n");
 }
 
-Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
-Button enc_btn = {ENC_CLK, DEBOUNCE_MS, HOLD_MS};
 void loop() {
   static bool on = true;
   

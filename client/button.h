@@ -12,14 +12,14 @@ struct Button {
     const unsigned long debounce_ms;
     const unsigned long hold_ms;
 
-    static unsigned long last_debounce;
-    static int raw_state;
-    static int debounced_state;
-    static int last_raw_state;
-    static int last_debounced_state;
-    static unsigned long ms;
-    static unsigned long hold_start;
-    static bool hold;
+    unsigned long last_debounce;
+    int raw_state;
+    int debounced_state;
+    int last_raw_state;
+    int last_debounced_state;
+    unsigned long ms;
+    unsigned long hold_start;
+    bool hold;
 };
 
 void init(Button &btn);
