@@ -25,5 +25,8 @@ extern const uint8_t ENC_DT;
 //code utilities
 extern const int DEBOUNCE_MS;
 extern const int DELAY_MS; //measured in ms
+extern const int INACTIVITY_MS;
+extern int n_disp_tasks;
+
 extern time_t last_update;
 extern time_t last_cached_update;

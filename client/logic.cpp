@@ -5,7 +5,7 @@
 #include "screen.h"
 #include "config.h"
 
-void update(Adafruit_ILI9341 &tft){
+void update_logic(Adafruit_ILI9341 &tft, const int selected){
   tft.setCursor(0, 0);
   tft.fillScreen(ILI9341_BLACK);
   HTTPClient http;
@@ -22,11 +22,22 @@ void update(Adafruit_ILI9341 &tft){
         return;
     }
 
+    const int skip = selected - n_disp_tasks;
+    int skipped = 0;
+    int i = 0;
     for (JsonPair kv : doc.as<JsonObject>()){
+      if (skipped < skip){
+        skipped++;
+        continue;
+      }
+
       String id = String(kv.key().c_str());
       String name = String(kv.value().as<const char*>());
-
-      draw_task(id, name, tft);
+      
+      if (i == skipped){
+        draw_task(id, name, tft, i);
+      }
+      else draw_task(id, name, tft);
     }
   }
   else http.end();

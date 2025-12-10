@@ -2,8 +2,8 @@
 #include <Arduino.h>
 
 //user variable definitions
-const char* SSID = ""; //Wifi name
-const char* password = ""; //Wifi password
+const char* SSID = "Willy room"; //Wifi name
+const char* password = "gbiui7Hc"; //Wifi password
 const int TEXT_SIZE = 3; //Default: 3
 const int HOLD_MS = 3000; //Default: 3000
 
@@ -25,3 +25,4 @@ const uint8_t ENC_CLK = 27;
 //code utilities definitions
 const int DEBOUNCE_MS = 50; //default: 50
 const int DELAY_MS = 60000; //default: 60000
+const int INACTIVITY_MS = 10000; //default: 10000
