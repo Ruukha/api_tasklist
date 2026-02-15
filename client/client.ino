@@ -50,7 +50,7 @@ void setup() {
   get_last_update();
   update(tft);
 
-  tasks_cap = tft.height() / TEXT_SIZE;
+  tasks_cap = tft.height() / (TEXT_SIZE * 8);
 
   Serial.print("Successfully initialised!\n");
 }
@@ -71,52 +71,50 @@ void loop() {
     digitalWrite(TFT_LED, on);
   }
 
-  // rotary encoder button logic
-  static ButtonState enc_state = update(enc_btn);
-  enc_state = update(enc_btn);
-  if (enc_state == BUTTON_HOLD){
-    // select task for removal
-  }
-  else if (enc_state == BUTTON_PRESS){
-    // idk???
-  }
-  
-  // rotary encoder logic
-  static int counter = 0;
-  static int lastCLK = LOW;
-  static int e_clk;
-  static int e_dt;
-  static unsigned long last_e_ms = 0;
-  static int e_debounce_ms = 3;
+  if (on){
+    // rotary encoder button logic
+    static ButtonState enc_state = update(enc_btn);
+    enc_state = update(enc_btn);
+    if (enc_state == BUTTON_HOLD){
+      // select task for removal
+    }
+    else if (enc_state == BUTTON_PRESS){
+      // show description / go back
+    }
+    
+    // rotary encoder logic
+    static int counter = 0;
+    static int e_lastCLK = LOW;
+    static int e_clk;
+    static int e_dt;
+    static unsigned long last_e_ms = 0;
+    static int e_debounce_ms = 3;
 
-  e_clk = digitalRead(ENC_CLK);
-  e_dt = digitalRead(ENC_DT);
-  
-  if (lastCLK != e_clk){ 
-    lastCLK = e_clk;
+    e_clk = digitalRead(ENC_CLK);
+    e_dt = digitalRead(ENC_DT);
+    
+    if (e_lastCLK != e_clk){ 
+      e_lastCLK = e_clk;
 
-    if (e_clk == HIGH){
       if (millis() - last_e_ms > e_debounce_ms){
-        if (e_dt == LOW) counter++; else counter--;
+        if (e_clk != e_dt) counter++; else counter--;
         counter = constrain(counter, 0, tasks_cap);
-        Serial.print(counter);
+        Serial.printf("enc_counter: %i", counter);
         Serial.print("\n");
       }
-    } 
-  }
-
-  // data update
-  static unsigned long ms = millis();
-  if (on){
-    //update
-    if ((millis() - ms) > DELAY_MS){
-      ms = millis();
-      get_last_update();
-      if (last_update > last_cached_update){
-        Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
-        Serial.print("New update available\n");
-        update(tft);
-      }
     }
+
+    // data update
+    static unsigned long ms = millis();
+      //update
+      if ((millis() - ms) > DELAY_MS){
+        ms = millis();
+        get_last_update();
+        if (last_update > last_cached_update){
+          Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
+          Serial.print("New update available\n");
+          update(tft);
+        }
+      }
   }
 }
