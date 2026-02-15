@@ -8,12 +8,14 @@
 #include "screen.h"
 #include "config.h"
 #include "button.h"
+#include "requests.h"
 
 time_t last_update;
 time_t last_cached_update;
-int tasks_cap;
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+int tasks_cap = tft.height() / (TEXT_SIZE * 8);
+StaticJsonDocument<4096> tasks;
 
 Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
 Button enc_btn = {ENC_SW, DEBOUNCE_MS, HOLD_MS};
@@ -47,10 +49,9 @@ void setup() {
   }while (WiFi.status() != WL_CONNECTED);
   Serial.print("Successfully connected!\n");
 
-  get_last_update();
-  update(tft);
-
-  tasks_cap = tft.height() / (TEXT_SIZE * 8);
+  get_last_update(last_update);
+  update(tft, tasks, 0);
+  last_cached_update = last_update;
 
   Serial.print("Successfully initialised!\n");
 }
@@ -72,16 +73,6 @@ void loop() {
   }
 
   if (on){
-    // rotary encoder button logic
-    static ButtonState enc_state = update(enc_btn);
-    enc_state = update(enc_btn);
-    if (enc_state == BUTTON_HOLD){
-      // select task for removal
-    }
-    else if (enc_state == BUTTON_PRESS){
-      // show description / go back
-    }
-    
     // rotary encoder logic
     static int counter = 0;
     static int e_lastCLK = LOW;
@@ -98,23 +89,56 @@ void loop() {
 
       if (millis() - last_e_ms > e_debounce_ms){
         if (e_clk != e_dt) counter++; else counter--;
-        counter = constrain(counter, 0, tasks_cap);
+        counter = constrain(counter, 0, tasks.size());
         Serial.printf("enc_counter: %i", counter);
         Serial.print("\n");
+        scroll(tft, tasks, counter);
+      }
+    }
+
+    // rotary encoder button logic
+    static ButtonState enc_state = update(enc_btn);
+    enc_state = update(enc_btn);
+    if (enc_state == BUTTON_HOLD){
+      // select task for removal
+      enc_state = BUTTON_NONE;
+      const char* task_id = getId(tasks, counter);
+      StaticJsonDocument<1024> task;
+      if (get_task_by_id(task, task_id)){
+        if (remove_task_id(task_id)){
+          update(tft, tasks, counter);
+          last_cached_update = last_update;
+        }
+      }
+    }
+    else if (enc_state == BUTTON_PRESS){
+      // show description / go back
+      const char* task_id = getId(tasks, counter);
+      StaticJsonDocument<1024> task;
+      if (get_task_by_id(task, task_id)){
+        serializeJsonPretty(task, Serial);
+        Serial.println();
       }
     }
 
     // data update
     static unsigned long ms = millis();
-      //update
-      if ((millis() - ms) > DELAY_MS){
-        ms = millis();
-        get_last_update();
-        if (last_update > last_cached_update){
-          Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
-          Serial.print("New update available\n");
-          update(tft);
-        }
+
+    if ((millis() - ms) > DELAY_MS){
+      ms = millis();
+      get_last_update(last_update);
+      if (last_update > last_cached_update){
+        Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
+        Serial.print("New update available\n");
+
+        try{
+          update(tft, tasks, counter);
+          last_cached_update = last_update;
+          }
+        catch (...) {
+          Serial.printf("Error while updating!");
+        }  
       }
+    }
   }
 }
