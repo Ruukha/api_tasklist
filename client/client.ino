@@ -11,11 +11,12 @@
 
 time_t last_update;
 time_t last_cached_update;
+int tasks_cap;
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 
 Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
-Button enc_btn = {ENC_CLK, DEBOUNCE_MS, HOLD_MS};
+Button enc_btn = {ENC_SW, DEBOUNCE_MS, HOLD_MS};
 void setup() {
   Serial.begin(115200);
   pinMode(TFT_CS, OUTPUT);
@@ -26,6 +27,9 @@ void setup() {
   pinMode(TFT_LED, OUTPUT);
   pinMode(BTN_PIN, INPUT_PULLUP);
   digitalWrite(BTN_PIN, HIGH);
+  pinMode(ENC_SW, INPUT_PULLUP);
+  pinMode(ENC_DT, INPUT);
+  pinMode(ENC_CLK, INPUT);
   Serial.println("Starting initialisation...");
 
   tft.setCursor(0, 0);
@@ -46,22 +50,62 @@ void setup() {
   get_last_update();
   update(tft);
 
+  tasks_cap = tft.height() / TEXT_SIZE;
+
   Serial.print("Successfully initialised!\n");
 }
 
 void loop() {
   static bool on = true;
   
-  //button switch
-  ButtonState btn_state = update(btn);
+  // button switch
+  static ButtonState btn_state;
+  btn_state = update(btn);
   if (btn_state == BUTTON_HOLD){
+    Serial.printf("Restarting...\n");
     ESP.restart();
   }
   else if (btn_state == BUTTON_PRESS){
+    Serial.printf("Toggling screen\n");
     on = !on;
     digitalWrite(TFT_LED, on);
   }
+
+  // rotary encoder button logic
+  static ButtonState enc_state = update(enc_btn);
+  enc_state = update(enc_btn);
+  if (enc_state == BUTTON_HOLD){
+    // select task for removal
+  }
+  else if (enc_state == BUTTON_PRESS){
+    // idk???
+  }
   
+  // rotary encoder logic
+  static int counter = 0;
+  static int lastCLK = LOW;
+  static int e_clk;
+  static int e_dt;
+  static unsigned long last_e_ms = 0;
+  static int e_debounce_ms = 3;
+
+  e_clk = digitalRead(ENC_CLK);
+  e_dt = digitalRead(ENC_DT);
+  
+  if (lastCLK != e_clk){ 
+    lastCLK = e_clk;
+
+    if (e_clk == HIGH){
+      if (millis() - last_e_ms > e_debounce_ms){
+        if (e_dt == LOW) counter++; else counter--;
+        counter = constrain(counter, 0, tasks_cap);
+        Serial.print(counter);
+        Serial.print("\n");
+      }
+    } 
+  }
+
+  // data update
   static unsigned long ms = millis();
   if (on){
     //update
