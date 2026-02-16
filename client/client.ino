@@ -50,7 +50,7 @@ void setup() {
   Serial.print("Successfully connected!\n");
 
   get_last_update(last_update);
-  update(tft, tasks, 0);
+  update(tft, tasks);
   last_cached_update = last_update;
 
   Serial.print("Successfully initialised!\n");
@@ -97,8 +97,9 @@ void loop() {
     }
 
     // rotary encoder button logic
-    static ButtonState enc_state = update(enc_btn);
+    static ButtonState enc_state;
     enc_state = update(enc_btn);
+    static bool menu = false;
     if (enc_state == BUTTON_HOLD){
       // select task for removal
       enc_state = BUTTON_NONE;
@@ -113,12 +114,7 @@ void loop() {
     }
     else if (enc_state == BUTTON_PRESS){
       // show description / go back
-      const char* task_id = getId(tasks, counter);
-      StaticJsonDocument<1024> task;
-      if (get_task_by_id(task, task_id)){
-        serializeJsonPretty(task, Serial);
-        Serial.println();
-      }
+      menu = !menu;
     }
 
     // data update
@@ -132,12 +128,12 @@ void loop() {
         Serial.print("New update available\n");
 
         try{
-          update(tft, tasks, counter);
+          update(tft, tasks, counter, menu);
           last_cached_update = last_update;
-          }
+        }
         catch (...) {
           Serial.printf("Error while updating!");
-        }  
+        }
       }
     }
   }

@@ -4,14 +4,21 @@
 #include "logic.h"
 #include "screen.h"
 #include "config.h"
+#include "requests.h"
 
-void update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter){
+void update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter, bool menu, int op){
   if (!getPayload(tasks)){
     Serial.print("Payload not obtained\n");
     return;
   }
 
-  scroll(tft, tasks, counter);
+  if (menu){
+    const char* id = getId(tasks, counter);
+    StaticJsonDocument<1024> task;
+    get_task_by_id(task, id);
+    show_menu(tft, task, op);
+  }
+  else scroll(tft, tasks, counter);
 }
 
 void scroll(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter){
