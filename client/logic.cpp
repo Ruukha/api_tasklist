@@ -4,60 +4,57 @@
 #include "logic.h"
 #include "screen.h"
 #include "config.h"
+#include "requests.h"
 
-void update_logic(Adafruit_ILI9341 &tft, const int selected){
-  tft.setCursor(0, 0);
-  tft.fillScreen(ILI9341_BLACK);
-  HTTPClient http;
-  http.begin(String(IP) + "/tasks");
-  int code = http.GET();
-  Serial.printf("HTTP status code: %d\n", code);
-  if (code == 200){
-    String payload = http.getString();
-    http.end();
-    StaticJsonDocument<4096> doc; 
-    DeserializationError error = deserializeJson(doc, payload);
-    if (error) {
-        Serial.printf("JSON parse failed!: %s\n", error);
-        return;
-    }
-
-    const int skip = selected - n_disp_tasks;
-    int skipped = 0;
-    int i = 0;
-    for (JsonPair kv : doc.as<JsonObject>()){
-      if (skipped < skip){
-        skipped++;
-        continue;
-      }
-
-      String id = String(kv.key().c_str());
-      String name = String(kv.value().as<const char*>());
-      
-      if (i == skipped){
-        draw_task(id, name, tft, i);
-      }
-      else draw_task(id, name, tft);
-    }
+void update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter, bool menu, int op){
+  if (!getPayload(tasks)){
+    Serial.print("Payload not obtained\n");
+    return;
   }
-  else http.end();
 
-  last_cached_update = last_update;
+  if (menu){
+    const char* id = getId(tasks, counter);
+    StaticJsonDocument<1024> task;
+    get_task_by_id(task, id);
+    show_menu(tft, task, op);
+  }
+  else scroll(tft, tasks, counter);
 }
 
-void get_last_update(){
-  HTTPClient http;
-  http.begin(String(IP) + "/tasks/last_update");
-  int code = http.GET();
-  if (code == 200){
-    String payload = http.getString();
-    http.end();
-    StaticJsonDocument<128> doc; 
-    DeserializationError error = deserializeJson(doc, payload);
-    if (error) {
-        Serial.printf("JSON parse failed!: %s\n", error);
+void scroll(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter){
+  StaticJsonDocument<2048> tasksToDraw;
+  if (getSlice(tasks, tasksToDraw, counter, counter + tasks_cap)) draw_tasks(tft, tasksToDraw);
+}
+
+bool getSlice(StaticJsonDocument<4096> &doc, StaticJsonDocument<2048> &outDoc, int start, int end){
+  outDoc.clear();
+
+  Serial.printf("start: %i, end: %i\n", start, end);
+
+  JsonObject inObj = doc.as<JsonObject>();
+  JsonObject outObj = outDoc.to<JsonObject>();
+
+  int idx = 0;
+  int copied = 0;
+
+  for (JsonPair kv : inObj) {
+    if (idx >= start && idx < end) {
+      outObj[kv.key().c_str()] = kv.value();
+      copied++;
     }
-    last_update = doc["unix_last_update"];
+    idx++;
+    if (copied >= end) break;
   }
-  else http.end();
+
+  return (copied > 0);
+}
+
+const char* getId(StaticJsonDocument<4096> &tasks, int counter){
+  int idx = 0;
+  for (JsonPair kv : tasks.as<JsonObject>()) {
+    if (idx == counter) {
+      return kv.key().c_str();
+    }
+    idx++;
+  }
 }

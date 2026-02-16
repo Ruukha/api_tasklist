@@ -8,12 +8,14 @@
 #include "screen.h"
 #include "config.h"
 #include "button.h"
+#include "requests.h"
 
 time_t last_update;
 time_t last_cached_update;
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
-int n_disp_tasks;
+int tasks_cap = tft.height() / (TEXT_SIZE * 8);
+StaticJsonDocument<4096> tasks;
 
 Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
 Button enc_btn = {ENC_SW, DEBOUNCE_MS, HOLD_MS};
@@ -26,9 +28,10 @@ void setup() {
   pinMode(TFT_SCK, OUTPUT);
   pinMode(TFT_LED, OUTPUT);
   pinMode(BTN_PIN, INPUT_PULLUP);
+  digitalWrite(BTN_PIN, HIGH);
   pinMode(ENC_SW, INPUT_PULLUP);
-  pinMode(ENC_DT, INPUT_PULLUP);
-  pinMode(ENC_CLK, INPUT_PULLUP);
+  pinMode(ENC_DT, INPUT);
+  pinMode(ENC_CLK, INPUT);
   Serial.println("Starting initialisation...");
 
   tft.setCursor(0, 0);
@@ -47,8 +50,9 @@ void setup() {
   }while (WiFi.status() != WL_CONNECTED);
   Serial.print("Successfully connected!\n");
 
-  get_last_update();
-  update_logic(tft);
+  get_last_update(last_update);
+  update(tft, tasks);
+  last_cached_update = last_update;
 
   Serial.print("Successfully initialised!\n");
 }
@@ -58,55 +62,81 @@ void loop() {
   static unsigned long now = 0;
   now = millis();
   
-  //button switch
-  ButtonState btn_state = update(btn);
+  // button switch
+  static ButtonState btn_state;
+  btn_state = update(btn);
   if (btn_state == BUTTON_HOLD){
+    Serial.printf("Restarting...\n");
     ESP.restart();
   }
   else if (btn_state == BUTTON_PRESS){
+    Serial.printf("Toggling screen\n");
     on = !on;
     digitalWrite(TFT_LED, on);
   }
-  
-  static unsigned long ms = millis();
+
   if (on){
-    static int selected = -1;
+    // rotary encoder logic
+    static int counter = 0;
+    static int e_lastCLK = LOW;
+    static int e_clk;
+    static int e_dt;
+    static unsigned long last_e_ms = 0;
+    static int e_debounce_ms = 3;
 
-    //encoder rotation
-    static int last_clk = LOW;
-    static int state_clk = digitalRead(ENC_CLK);
-    static unsigned long enc_ms = 0;
+    e_clk = digitalRead(ENC_CLK);
+    e_dt = digitalRead(ENC_DT);
+    
+    if (e_lastCLK != e_clk){ 
+      e_lastCLK = e_clk;
 
-    last_clk = state_clk;
-    state_clk = digitalRead(ENC_CLK);
-    if (last_clk != state_clk){
-      enc_ms = now;
-      if (digitalRead(ENC_DT) != state_clk){
-        //clockwise
-        selected++;
+      if (millis() - last_e_ms > e_debounce_ms){
+        if (e_clk != e_dt) counter++; else counter--;
+        counter = constrain(counter, 0, tasks.size());
+        Serial.printf("enc_counter: %i", counter);
+        Serial.print("\n");
+        scroll(tft, tasks, counter);
       }
-      else {
-        //counter clockwise
-        selected--;
-      }
-      selected = constrain(selected, -1, n_disp_tasks-1);
-      Serial.println(selected);
-      update_logic(tft, selected);
-    }
-    if (now - enc_ms > INACTIVITY_MS && selected != -1){
-      selected = -1;
-      Serial.println(selected);
-      update_logic(tft, selected);
     }
 
-    //update
-    if ((now - ms) > DELAY_MS){
-      ms = now;
-      get_last_update();
+    // rotary encoder button logic
+    static ButtonState enc_state;
+    enc_state = update(enc_btn);
+    static bool menu = false;
+    if (enc_state == BUTTON_HOLD){
+      // select task for removal
+      enc_state = BUTTON_NONE;
+      const char* task_id = getId(tasks, counter);
+      StaticJsonDocument<1024> task;
+      if (get_task_by_id(task, task_id)){
+        if (remove_task_id(task_id)){
+          update(tft, tasks, counter);
+          last_cached_update = last_update;
+        }
+      }
+    }
+    else if (enc_state == BUTTON_PRESS){
+      // show description / go back
+      menu = !menu;
+    }
+
+    // data update
+    static unsigned long ms = millis();
+
+    if ((millis() - ms) > DELAY_MS){
+      ms = millis();
+      get_last_update(last_update);
       if (last_update > last_cached_update){
         Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
         Serial.print("New update available\n");
-        update_logic(tft, selected);
+
+        try{
+          update(tft, tasks, counter, menu);
+          last_cached_update = last_update;
+        }
+        catch (...) {
+          Serial.printf("Error while updating!");
+        }
       }
     }
   }

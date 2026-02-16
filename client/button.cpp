@@ -41,6 +41,7 @@ ButtonState update(Button &btn)
             }
         }
         if (btn.hold && (now - btn.hold_start) >= btn.hold_ms){
+            btn.hold_start = now;
             return BUTTON_HOLD;
         }
     }
