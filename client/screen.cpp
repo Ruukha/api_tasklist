@@ -73,15 +73,5 @@ void draw_tasks(Adafruit_ILI9341 &tft, StaticJsonDocument<2048> &doc){
 void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
 {
     Serial.println("Drawing task: " + id + ": " + name);
-    if (selected == -1){
-        tft.println(id + ": " + name);
-    }
-    else{
-        const int line_height = 8 * TEXT_SIZE;
-        const int y = selected * line_height;
-        tft.fillRect(0, y, tft.width(), line_height, ILI9341_WHITE);
-        tft.setTextColor(ILI9341_BLACK);
-        tft.println(id + ": " + name);
-        tft.setTextColor(ILI9341_WHITE);
-    }
+    tft.println(id + ": " + name);
 }
