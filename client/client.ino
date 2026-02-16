@@ -36,6 +36,7 @@ void setup() {
 
   tft.setCursor(0, 0);
   init_screen(tft);
+  n_disp_tasks = (tft.height() + 8*TEXT_SIZE-1)/TEXT_SIZE*8;
   digitalWrite(TFT_LED, HIGH);
 
   init(btn);
@@ -58,6 +59,8 @@ void setup() {
 
 void loop() {
   static bool on = true;
+  static unsigned long now = 0;
+  now = millis();
   
   // button switch
   static ButtonState btn_state;

@@ -25,3 +25,4 @@ const uint8_t ENC_CLK = 27;
 //code utilities definitions
 const int DEBOUNCE_MS = 50; //default: 50
 const int DELAY_MS = 60000; //default: 60000
+const int INACTIVITY_MS = 10000; //default: 10000
