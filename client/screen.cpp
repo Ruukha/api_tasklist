@@ -81,7 +81,7 @@ void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
 }
 
 void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame){
-    icon_size = sizeof(icon[0]);
+    int icon_size = sizeof(icon.data[0]);
     int x = tft.width() - icon_size*3;
     int y = tft.height() - icon_size*3;
     for(int i = 0; i < 3; i++){

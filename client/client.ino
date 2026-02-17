@@ -179,7 +179,7 @@ void loop() {
 void animationTask(void *pvParameters) {
   int current_frame = 0;
   bool last_active = is_active;
-  int icon_size = sizeof(current_icon[0]) * 3;
+  int icon_size = sizeof(current_icon->data[0]) * 3;
   while (true) {
       if (current_icon && is_active) {
           current_frame = (current_frame + 1) % current_icon->frames;
