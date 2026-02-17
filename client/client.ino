@@ -7,6 +7,7 @@
 #include "logic.h"
 #include "screen.h"
 #include "config.h"
+#include "pins.h"
 #include "button.h"
 #include "requests.h"
 #include "icons.h"
@@ -21,6 +22,9 @@ StaticJsonDocument<4096> tasks;
 volatile const Icon* current_icon = &loading_icon;
 TaskHandle_t animationTaskHandle = NULL;
 volatile bool is_active = true;
+
+volatile static bool on = true;
+static bool valid = true;
 
 Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
 Button enc_btn = {ENC_SW, DEBOUNCE_MS, HOLD_MS};
@@ -47,12 +51,19 @@ void setup() {
   init(btn);
   init(enc_btn);
 
+  int wifiTries = 0;
   do{
     Serial.print("Trying to connect...\n");
     WiFi.begin(SSID, password);
     Serial.printf("Wifi status: %d\n", WiFi.status());
+    wifiTries++;
+    if (wifiTries > 3) {
+      current_icon = &error_icon;
+      tft.printf("Wifi error: %d\n", WiFi.status());
+      valid = false;
+    }
     delay(5000);
-  }while (WiFi.status() != WL_CONNECTED);
+  }while (WiFi.status() != WL_CONNECTED && wifiTries <= 3);
   Serial.print("Successfully connected!\n");
 
   get_last_update(last_update);
@@ -60,13 +71,9 @@ void setup() {
   last_cached_update = last_update;
 
   Serial.print("Successfully initialised!\n");
-  
-  current_icon = &loading_icon;
 }
 
-void loop() {
-  static bool on = true;
-  
+void loop() {  
   // button switch
   static ButtonState btn_state;
   btn_state = update(btn);
@@ -76,12 +83,11 @@ void loop() {
   }
   else if (btn_state == BUTTON_PRESS){
     Serial.printf("Toggling screen\n");
-    if (on) is_active = false;
     on = !on;
     digitalWrite(TFT_LED, on);
   }
 
-  if (on){
+  if (on && valid){
     // rotary encoder logic
     static int counter = 0;
     static int e_lastCLK = LOW;
@@ -162,15 +168,8 @@ void loop() {
         Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
         Serial.print("New update available\n");
 
-        try{
-          if (!update(tft, tasks, counter, menu, op)) current_icon = &error_icon; else is_active = false;
-          last_cached_update = last_update;
-        }
-        catch (...) {
-          Serial.printf("Error while updating!");
-          current_icon = &error_icon;
-          is_active = true;
-        }
+        if (!update(tft, tasks, counter, menu, op)) current_icon = &error_icon; else is_active = false;
+        last_cached_update = last_update;
       }
     }
   }
@@ -179,13 +178,14 @@ void loop() {
 void animationTask(void *pvParameters) {
   int current_frame = 0;
   bool last_active = is_active;
-  int icon_size = sizeof(current_icon->data[0]) * 3;
+  int icon_size = (sizeof(current_icon->data[0]) / sizeof(current_icon->data[0][0])) * current_icon->scale;
   while (true) {
-      if (current_icon && is_active) {
+      if (current_icon && is_active && on) {
           current_frame = (current_frame + 1) % current_icon->frames;
           draw_icon(tft, *current_icon, current_frame);
       }
-      if (!is_active && last_active) tft.fillRect(tft.width() - icon_size, tft.height() - icon_size, icon_size, icon_size, ILI9341_BLACK);
-      vTaskDelay(200 / portTICK_PERIOD_MS);
+      if (!is_active && last_active && on) tft.fillRect(tft.width() - icon_size, tft.height() - icon_size, icon_size, icon_size, ILI9341_BLACK);
+      last_active = is_active;
+      vTaskDelay(FRAME_MS / portTICK_PERIOD_MS);
   }
 }

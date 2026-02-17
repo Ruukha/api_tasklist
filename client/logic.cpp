@@ -7,6 +7,7 @@
 #include "requests.h"
 
 bool update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter, bool menu, int op){
+  try{
   if (!getPayload(tasks)){
     Serial.print("Payload not obtained\n");
     return false;
@@ -19,8 +20,13 @@ bool update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter,
     show_menu(tft, task, op);
   }
   else scroll(tft, tasks, counter);
-
+  
   return true;
+  }
+  catch (...){
+    Serial.printf("Error while updating!");
+    return false;
+  }
 }
 
 void scroll(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter){
@@ -52,11 +58,16 @@ bool getSlice(StaticJsonDocument<4096> &doc, StaticJsonDocument<2048> &outDoc, i
 }
 
 const char* getId(StaticJsonDocument<4096> &tasks, int counter){
-  int idx = 0;
-  for (JsonPair kv : tasks.as<JsonObject>()) {
-    if (idx == counter) {
-      return kv.key().c_str();
+  try{
+    int idx = 0;
+    for (JsonPair kv : tasks.as<JsonObject>()) {
+      if (idx == counter) {
+        return kv.key().c_str();
+      }
+      idx++;
     }
-    idx++;
+  }
+  catch(...){
+    return "-1";
   }
 }

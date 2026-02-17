@@ -20,6 +20,7 @@ struct Button {
     unsigned long ms;
     unsigned long hold_start;
     bool hold;
+    bool hold_sent;
 };
 
 void init(Button &btn);

@@ -10,6 +10,7 @@ void init(Button &btn)
     btn.ms = 0;
     btn.hold_start = 0;
     btn.hold = false;
+    btn.hold_sent = false;
 }
 
 ButtonState update(Button &btn)
@@ -37,11 +38,16 @@ ButtonState update(Button &btn)
             //Rising edge
             else if (btn.debounced_state == HIGH){
                 btn.hold = false;
+                if (btn.hold_sent){
+                    btn.hold_sent = false;
+                    return BUTTON_NONE;    
+                }
                 return BUTTON_PRESS;
             }
         }
-        if (btn.hold && (now - btn.hold_start) >= btn.hold_ms){
+        if (!btn.hold_sent && btn.hold && (now - btn.hold_start) >= btn.hold_ms){
             btn.hold_start = now;
+            btn.hold_sent = true;
             return BUTTON_HOLD;
         }
     }
