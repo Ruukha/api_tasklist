@@ -18,7 +18,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 int tasks_cap = tft.height() / (TEXT_SIZE * 8);
 StaticJsonDocument<4096> tasks;
 
-volatile const Icon* current_icon = nullptr;
+volatile const Icon* current_icon = &loading_icon;
 TaskHandle_t animationTaskHandle = NULL;
 volatile bool is_active = true;
 
@@ -179,12 +179,13 @@ void loop() {
 void animationTask(void *pvParameters) {
   int current_frame = 0;
   bool last_active = is_active;
+  int icon_size = sizeof(current_icon[0]) * 3;
   while (true) {
       if (current_icon && is_active) {
           current_frame = (current_frame + 1) % current_icon->frames;
           draw_icon(tft, *current_icon, current_frame);
       }
-      if (!is_active && last_active) tft.fillRect(tft.width() - 9, tft.height() - 9, 9, 9, ILI9341_BLACK);
+      if (!is_active && last_active) tft.fillRect(tft.width() - icon_size, tft.height() - icon_size, icon_size, icon_size, ILI9341_BLACK);
       vTaskDelay(200 / portTICK_PERIOD_MS);
   }
 }

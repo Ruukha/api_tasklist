@@ -81,8 +81,9 @@ void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
 }
 
 void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame){
-    int x = tft.width() - 9;
-    int y = tft.height() - 9;
+    icon_size = sizeof(icon[0]);
+    int x = tft.width() - icon_size*3;
+    int y = tft.height() - icon_size*3;
     for(int i = 0; i < 3; i++){
         for(int j = 0; j < 3; j++){
             uint16_t color = icon.data[frame][i][j] ? ILI9341_WHITE : ILI9341_BLACK;
