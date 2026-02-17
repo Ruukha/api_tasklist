@@ -15,6 +15,40 @@
 time_t last_update;
 time_t last_cached_update;
 
+// Rotary encoder interrupt state
+volatile int enc_rotation = 0;  // Queues up rotations: positive=CW, negative=CCW
+volatile unsigned long enc_last_interrupt = 0;
+const unsigned long ENC_DEBOUNCE_US = 5000;  // 1ms debounce in microseconds
+
+// ISR for rotary encoder - detect on both rising and falling edges
+void IRAM_ATTR encoderISR() {
+  unsigned long now = micros();
+  
+  // Debounce: ignore if triggered too soon after last interrupt
+  if (now - enc_last_interrupt < ENC_DEBOUNCE_US) return;
+  enc_last_interrupt = now;
+  
+  int clk = digitalRead(ENC_CLK);
+  int dt = digitalRead(ENC_DT);
+  
+  // On every CLK edge (both rising and falling), check DT
+  if (clk == HIGH) {
+    // CLK rising edge - check DT
+    if (dt == LOW) {
+      enc_rotation++;  // Counter-clockwise
+    } else {
+      enc_rotation--;  // Clockwise
+    }
+  } else {
+    // CLK falling edge - check DT
+    if (dt == HIGH) {
+      enc_rotation++;  // Counter-clockwise
+    } else {
+      enc_rotation--;  // Clockwise
+    }
+  }
+}
+
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 int tasks_cap = tft.height() / (TEXT_SIZE * 8);
 StaticJsonDocument<4096> tasks;
@@ -39,8 +73,9 @@ void setup() {
   pinMode(BTN_PIN, INPUT_PULLUP);
   digitalWrite(BTN_PIN, HIGH);
   pinMode(ENC_SW, INPUT_PULLUP);
-  pinMode(ENC_DT, INPUT);
-  pinMode(ENC_CLK, INPUT);
+  pinMode(ENC_DT, INPUT_PULLUP);
+  pinMode(ENC_CLK, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ENC_CLK), encoderISR, CHANGE);
   Serial.println("Starting initialisation...");
 
   tft.setCursor(0, 0);
@@ -90,43 +125,36 @@ void loop() {
   if (on && valid){
     // rotary encoder logic
     static int counter = 0;
-    static int e_lastCLK = LOW;
-    static int e_clk;
-    static int e_dt;
-    static unsigned long last_e_ms = 0;
-    static int e_debounce_ms = 3;
     static bool menu = false;
     static int op = 0;
     static char saved_id[8];
     static StaticJsonDocument<1024> task;
 
-    e_clk = digitalRead(ENC_CLK);
-    e_dt = digitalRead(ENC_DT);
-    
-    if (e_lastCLK != e_clk){ 
-      e_lastCLK = e_clk;
-
-      if (millis() - last_e_ms > e_debounce_ms){
-        if (e_clk != e_dt){
-          if (!menu) counter++; else op++;
-        } 
-        else {
-          if (!menu) counter--; else op--;
+    // Process all queued rotations from ISR
+    while (enc_rotation != 0) {
+      int rotation = enc_rotation;
+      enc_rotation = 0;  // Clear the queue
+      
+      if (rotation > 0) {
+        // Clockwise
+        if (!menu) counter++; else op++;
+      } else {
+        // Counter-clockwise
+        if (!menu) counter--; else op--;
+      }
+      
+      op = constrain(op, 0, 2);
+      counter = constrain(counter, 0, tasks.size());
+      Serial.printf("enc_counter: %i, op: %i\n", counter, op);
+      if (!menu) scroll(tft, tasks, counter); 
+      else {
+        const char* id = getId(tasks, counter);
+        if (strcmp(id, saved_id)){
+          current_icon = &loading_icon;
+          if (!get_task_by_id(task, id)) current_icon = &error_icon;
+          strncpy(saved_id, id, 8);
         }
-        op = constrain(op, 0, 2);
-        counter = constrain(counter, 0, tasks.size());
-        Serial.printf("enc_counter: %i, op: %i", counter, op);
-        Serial.print("\n");
-        if (!menu) scroll(tft, tasks, counter); 
-        else {
-          const char* id = getId(tasks, counter);
-          if (strcmp(id, saved_id)){
-            current_icon = &loading_icon;
-            if (!get_task_by_id(task, id)) current_icon = &error_icon;
-            strncpy(saved_id, id, 8);
-          }
-          show_menu(tft, task, op);
-        }
+        show_menu(tft, task, op);
       }
     }
 
