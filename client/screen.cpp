@@ -28,25 +28,28 @@ void init_screen(Adafruit_ILI9341 &tft){
 }
 
 void show_menu(Adafruit_ILI9341 &tft, StaticJsonDocument<1024> &task, int op){
+    Serial.print("Showing menu...\n");
+
+    tft.setCursor(0, 0);
     tft.fillScreen(ILI9341_BLACK);
     tft.print(task["id"].as<const char*>());
     tft.print(": ");
     tft.println(task["name"].as<const char*>());
+    tft.println();
 
     switch (op){
         case 0:
-        tft.println(task["desc"].as<const char*>());
-        tft.println();
+        tft.println(task["description"].as<const char*>());
         break;
 
         case 1:
-        tft.print("Added: ");
-        tft.println(task["date"].as<const char*>());
+        tft.print("Added:\n");
+        tft.print(task["date"].as<const char*>());
         break;
 
         case 2:
-        tft.print("Expires: ");
-        tft.println(task["expiry"].as<const char*>());
+        tft.print("Expires:\n");
+        tft.print(task["expiry"].as<const char*>());
         break;
 
         default:

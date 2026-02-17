@@ -80,6 +80,10 @@ void loop() {
     static int e_dt;
     static unsigned long last_e_ms = 0;
     static int e_debounce_ms = 3;
+    static bool menu = false;
+    static int op = 0;
+    static char saved_id[8];
+    static StaticJsonDocument<1024> task;
 
     e_clk = digitalRead(ENC_CLK);
     e_dt = digitalRead(ENC_DT);
@@ -88,18 +92,31 @@ void loop() {
       e_lastCLK = e_clk;
 
       if (millis() - last_e_ms > e_debounce_ms){
-        if (e_clk != e_dt) counter++; else counter--;
+        if (e_clk != e_dt){
+          if (!menu) counter++; else op++;
+        } 
+        else {
+          if (!menu) counter--; else op--;
+        }
+        op = constrain(op, 0, 2);
         counter = constrain(counter, 0, tasks.size());
-        Serial.printf("enc_counter: %i", counter);
+        Serial.printf("enc_counter: %i, op: %i", counter, op);
         Serial.print("\n");
-        scroll(tft, tasks, counter);
+        if (!menu) scroll(tft, tasks, counter); 
+        else {
+          const char* id = getId(tasks, counter);
+          if (strcmp(id, saved_id)){
+            get_task_by_id(task, id);
+            strncpy(saved_id, id, 8);
+          }
+          show_menu(tft, task, op);
+        }
       }
     }
 
     // rotary encoder button logic
     static ButtonState enc_state;
     enc_state = update(enc_btn);
-    static bool menu = false;
     if (enc_state == BUTTON_HOLD){
       // select task for removal
       enc_state = BUTTON_NONE;
@@ -107,6 +124,7 @@ void loop() {
       StaticJsonDocument<1024> task;
       if (get_task_by_id(task, task_id)){
         if (remove_task_id(task_id)){
+          Serial.printf("Successfully deleted task %s\n", task_id);
           update(tft, tasks, counter);
           last_cached_update = last_update;
         }
@@ -114,7 +132,10 @@ void loop() {
     }
     else if (enc_state == BUTTON_PRESS){
       // show description / go back
+      Serial.print("Toggling menu\n");
       menu = !menu;
+      op = 0;
+      update(tft, tasks, counter, menu, op);
     }
 
     // data update
@@ -128,7 +149,7 @@ void loop() {
         Serial.print("New update available\n");
 
         try{
-          update(tft, tasks, counter, menu);
+          update(tft, tasks, counter, menu, op);
           last_cached_update = last_update;
         }
         catch (...) {
