@@ -6,10 +6,10 @@
 #include "config.h"
 #include "requests.h"
 
-void update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter, bool menu, int op){
+bool update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter, bool menu, int op){
   if (!getPayload(tasks)){
     Serial.print("Payload not obtained\n");
-    return;
+    return false;
   }
 
   if (menu){
@@ -19,6 +19,8 @@ void update(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter,
     show_menu(tft, task, op);
   }
   else scroll(tft, tasks, counter);
+
+  return true;
 }
 
 void scroll(Adafruit_ILI9341 &tft, StaticJsonDocument<4096> &tasks, int counter){

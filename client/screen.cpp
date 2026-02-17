@@ -2,6 +2,7 @@
 
 #include "screen.h"
 #include "config.h"
+#include "icons.h"
 
 void test(Adafruit_ILI9341 &tft) {
     Serial.println("Adafruit test");
@@ -77,4 +78,15 @@ void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
 {
     Serial.println("Drawing task: " + id + ": " + name);
     tft.println(id + ": " + name);
+}
+
+void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame){
+    int x = tft.width() - 9;
+    int y = tft.height() - 9;
+    for(int i = 0; i < 3; i++){
+        for(int j = 0; j < 3; j++){
+            uint16_t color = icon.data[frame][i][j] ? ILI9341_WHITE : ILI9341_BLACK;
+            tft.fillRect(x + j * 3, y + i * 3, 3, 3, color);
+        }
+    }
 }

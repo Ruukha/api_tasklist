@@ -9,6 +9,7 @@
 #include "config.h"
 #include "button.h"
 #include "requests.h"
+#include "icons.h"
 
 time_t last_update;
 time_t last_cached_update;
@@ -16,6 +17,10 @@ time_t last_cached_update;
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 int tasks_cap = tft.height() / (TEXT_SIZE * 8);
 StaticJsonDocument<4096> tasks;
+
+volatile const Icon* current_icon = nullptr;
+TaskHandle_t animationTaskHandle = NULL;
+volatile bool is_active = true;
 
 Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
 Button enc_btn = {ENC_SW, DEBOUNCE_MS, HOLD_MS};
@@ -37,6 +42,7 @@ void setup() {
   tft.setCursor(0, 0);
   init_screen(tft);
   digitalWrite(TFT_LED, HIGH);
+  xTaskCreate(animationTask, "Animate", 2048, NULL, 1, &animationTaskHandle);
 
   init(btn);
   init(enc_btn);
@@ -50,10 +56,12 @@ void setup() {
   Serial.print("Successfully connected!\n");
 
   get_last_update(last_update);
-  update(tft, tasks);
+  if (!update(tft, tasks)) current_icon = &error_icon; else is_active = false;
   last_cached_update = last_update;
 
   Serial.print("Successfully initialised!\n");
+  
+  current_icon = &loading_icon;
 }
 
 void loop() {
@@ -68,6 +76,7 @@ void loop() {
   }
   else if (btn_state == BUTTON_PRESS){
     Serial.printf("Toggling screen\n");
+    if (on) is_active = false;
     on = !on;
     digitalWrite(TFT_LED, on);
   }
@@ -106,7 +115,8 @@ void loop() {
         else {
           const char* id = getId(tasks, counter);
           if (strcmp(id, saved_id)){
-            get_task_by_id(task, id);
+            current_icon = &loading_icon;
+            if (!get_task_by_id(task, id)) current_icon = &error_icon;
             strncpy(saved_id, id, 8);
           }
           show_menu(tft, task, op);
@@ -122,20 +132,23 @@ void loop() {
       enc_state = BUTTON_NONE;
       const char* task_id = getId(tasks, counter);
       StaticJsonDocument<1024> task;
+      current_icon = &loading_icon;
       if (get_task_by_id(task, task_id)){
         if (remove_task_id(task_id)){
           Serial.printf("Successfully deleted task %s\n", task_id);
-          update(tft, tasks, counter);
+          if (!update(tft, tasks, counter)) current_icon = &error_icon; else is_active = false;
           last_cached_update = last_update;
         }
+        else current_icon = &error_icon;
       }
+      else current_icon = &error_icon;
     }
     else if (enc_state == BUTTON_PRESS){
       // show description / go back
       Serial.print("Toggling menu\n");
       menu = !menu;
       op = 0;
-      update(tft, tasks, counter, menu, op);
+      if (!update(tft, tasks, counter, menu, op)) current_icon = &error_icon; else is_active = false;
     }
 
     // data update
@@ -143,19 +156,35 @@ void loop() {
 
     if ((millis() - ms) > DELAY_MS){
       ms = millis();
+      current_icon = &loading_icon;
       get_last_update(last_update);
       if (last_update > last_cached_update){
         Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
         Serial.print("New update available\n");
 
         try{
-          update(tft, tasks, counter, menu, op);
+          if (!update(tft, tasks, counter, menu, op)) current_icon = &error_icon; else is_active = false;
           last_cached_update = last_update;
         }
         catch (...) {
           Serial.printf("Error while updating!");
+          current_icon = &error_icon;
+          is_active = true;
         }
       }
     }
+  }
+}
+
+void animationTask(void *pvParameters) {
+  int current_frame = 0;
+  bool last_active = is_active;
+  while (true) {
+      if (current_icon && is_active) {
+          current_frame = (current_frame + 1) % current_icon->frames;
+          draw_icon(tft, *current_icon, current_frame);
+      }
+      if (!is_active && last_active) tft.fillRect(tft.width() - 9, tft.height() - 9, 9, 9, ILI9341_BLACK);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
   }
 }
