@@ -3,6 +3,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Adafruit_ILI9341.h>
+#include <ESP32Encoder.h>
 
 #include "logic.h"
 #include "screen.h"
@@ -15,39 +16,9 @@
 time_t last_update;
 time_t last_cached_update;
 
-// Rotary encoder interrupt state
-volatile int enc_rotation = 0;  // Queues up rotations: positive=CW, negative=CCW
+volatile int enc_rotation = 0;  // positive=CW, negative=CCW
 volatile unsigned long enc_last_interrupt = 0;
-const unsigned long ENC_DEBOUNCE_US = 5000;  // 1ms debounce in microseconds
-
-// ISR for rotary encoder - detect on both rising and falling edges
-void IRAM_ATTR encoderISR() {
-  unsigned long now = micros();
-  
-  // Debounce: ignore if triggered too soon after last interrupt
-  if (now - enc_last_interrupt < ENC_DEBOUNCE_US) return;
-  enc_last_interrupt = now;
-  
-  int clk = digitalRead(ENC_CLK);
-  int dt = digitalRead(ENC_DT);
-  
-  // On every CLK edge (both rising and falling), check DT
-  if (clk == HIGH) {
-    // CLK rising edge - check DT
-    if (dt == LOW) {
-      enc_rotation++;  // Counter-clockwise
-    } else {
-      enc_rotation--;  // Clockwise
-    }
-  } else {
-    // CLK falling edge - check DT
-    if (dt == HIGH) {
-      enc_rotation++;  // Counter-clockwise
-    } else {
-      enc_rotation--;  // Clockwise
-    }
-  }
-}
+const unsigned long ENC_DEBOUNCE_US = 5000;
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 int tasks_cap = tft.height() / (TEXT_SIZE * 8);
@@ -62,6 +33,46 @@ static bool valid = true;
 
 Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
 Button enc_btn = {ENC_SW, DEBOUNCE_MS, HOLD_MS};
+ESP32Encoder enc;
+
+void handleEncoder(bool &menu, int &counter, int &op, StaticJsonDocument<1024> &task, char saved_id[8]) {
+  static int64_t lastCount = 0;
+
+  int64_t now = enc.getCount();
+  int64_t delta = now - lastCount;
+  if (delta == 0) return;
+
+  lastCount = now;
+
+  int rotation = (delta > 0) ? +1 : -1;
+
+  int steps = (int)delta;
+
+  if (rotation > 0) {
+    if (!menu) counter++; else op++;
+  } else {
+    if (!menu) counter--; else op--;
+  }
+
+  op = constrain(op, 0, 2);
+  counter = constrain(counter, 0, (int)tasks.size());
+
+  Serial.printf("enc_count:%lld delta:%lld counter:%i op:%i\n",
+                (long long)now, (long long)delta, counter, op);
+
+  if (!menu) {
+    scroll(tft, tasks, counter);
+  } else {
+    const char* id = getId(tasks, counter);
+    if (strcmp(id, saved_id)) {
+      current_icon = &loading_icon;
+      if (!get_task_by_id(task, id)) current_icon = &error_icon;
+      strncpy(saved_id, id, 8);
+    }
+    show_menu(tft, task, op);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(TFT_CS, OUTPUT);
@@ -75,7 +86,6 @@ void setup() {
   pinMode(ENC_SW, INPUT_PULLUP);
   pinMode(ENC_DT, INPUT_PULLUP);
   pinMode(ENC_CLK, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_CLK), encoderISR, CHANGE);
   Serial.println("Starting initialisation...");
 
   tft.setCursor(0, 0);
@@ -85,6 +95,9 @@ void setup() {
 
   init(btn);
   init(enc_btn);
+  enc.attachHalfQuad(ENC_DT, ENC_CLK);
+  enc.setFilter(1023);
+  enc.clearCount();
 
   int wifiTries = 0;
   do{
@@ -127,36 +140,10 @@ void loop() {
     static int counter = 0;
     static bool menu = false;
     static int op = 0;
-    static char saved_id[8];
+    static char saved_id[8] = "";
     static StaticJsonDocument<1024> task;
 
-    // Process all queued rotations from ISR
-    while (enc_rotation != 0) {
-      int rotation = enc_rotation;
-      enc_rotation = 0;  // Clear the queue
-      
-      if (rotation > 0) {
-        // Clockwise
-        if (!menu) counter++; else op++;
-      } else {
-        // Counter-clockwise
-        if (!menu) counter--; else op--;
-      }
-      
-      op = constrain(op, 0, 2);
-      counter = constrain(counter, 0, tasks.size());
-      Serial.printf("enc_counter: %i, op: %i\n", counter, op);
-      if (!menu) scroll(tft, tasks, counter); 
-      else {
-        const char* id = getId(tasks, counter);
-        if (strcmp(id, saved_id)){
-          current_icon = &loading_icon;
-          if (!get_task_by_id(task, id)) current_icon = &error_icon;
-          strncpy(saved_id, id, 8);
-        }
-        show_menu(tft, task, op);
-      }
-    }
+    handleEncoder(menu, counter, op, task, saved_id);
 
     // rotary encoder button logic
     static ButtonState enc_state;

@@ -77,7 +77,7 @@ void draw_tasks(Adafruit_ILI9341 &tft, StaticJsonDocument<2048> &doc){
 void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
 {
     Serial.println("Drawing task: " + id + ": " + name);
-    tft.println(id + ": " + name);
+    tft.println(name);
 }
 
 void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame){
