@@ -3,3 +3,4 @@ api/tasks/__pycache__/
 .vscode/
 client/.vscode/
 client/build/
+client/credentials.cpp
