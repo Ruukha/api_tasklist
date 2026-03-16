@@ -2,8 +2,6 @@
 #include <Arduino.h>
 
 //user variables
-extern const char* SSID; //Wifi name
-extern const char* password; //Wifi password
 extern const int TEXT_SIZE;
 extern const int HOLD_MS;
 
@@ -14,4 +12,6 @@ extern const char* IP; //server IP
 extern const int DEBOUNCE_MS;
 extern const int DELAY_MS;
 extern const int FRAME_MS;
+extern const int TFT_FREQ;
+extern const int TFT_RES;
 extern int tasks_cap;

@@ -77,7 +77,7 @@ void draw_tasks(Adafruit_ILI9341 &tft, StaticJsonDocument<2048> &doc){
 void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
 {
     Serial.println("Drawing task: " + id + ": " + name);
-    tft.println(name);
+    tft.println("- " + name);
 }
 
 void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame){
@@ -91,4 +91,13 @@ void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame){
             tft.fillRect(x + j * icon_scale, y + i * icon_scale, icon_scale, icon_scale, color);
         }
     }
+}
+
+void setBrightness(float lux, uint8_t pin){
+    float normalised = log10(lux + 1) / log10(1000);
+    int brightness = normalised * 255;
+    brightness = constrain(brightness, 20, 255);
+
+    ledcWrite(pin, brightness);
+    Serial.println(brightness);
 }
