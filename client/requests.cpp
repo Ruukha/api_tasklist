@@ -3,10 +3,10 @@
 
 #include "config.h"
 
-extern bool is_active;
+extern bool showIcon;
 
 bool getPayload(StaticJsonDocument<4096> &doc){
-    is_active = true;
+    showIcon = true;
     try{
         HTTPClient http;
         http.begin(String(IP) + "/tasks");
@@ -21,7 +21,7 @@ bool getPayload(StaticJsonDocument<4096> &doc){
                 Serial.printf("JSON parse failed!: %s\n", error);
                 return false;
             }
-            is_active = false;
+            showIcon = false;
             return true;
         }
         else{
@@ -35,7 +35,7 @@ bool getPayload(StaticJsonDocument<4096> &doc){
 }
 
 void get_last_update(time_t &last_update){
-    is_active = true;
+    showIcon = true;
     try{
         HTTPClient http;
         http.begin(String(IP) + "/tasks/last_update");
@@ -53,7 +53,7 @@ void get_last_update(time_t &last_update){
         }
         else http.end();
 
-        is_active = false;
+        showIcon = false;
     }
     catch (...) {
         return;
@@ -61,7 +61,7 @@ void get_last_update(time_t &last_update){
 }
 
 bool get_task_by_id(StaticJsonDocument<1024> &task, const char* id){
-    is_active = true;
+    showIcon = true;
     try{
         HTTPClient http;
         http.begin(String(IP) + "/tasks/" + String(id));
@@ -74,7 +74,7 @@ bool get_task_by_id(StaticJsonDocument<1024> &task, const char* id){
                 Serial.printf("JSON parse failed!: %s\n", error);
                 return false;
             }
-            is_active = false;
+            showIcon = false;
             return true;
         }
         else http.end();
@@ -87,14 +87,14 @@ bool get_task_by_id(StaticJsonDocument<1024> &task, const char* id){
 }
 
 bool remove_task_id(const char* id){
-    is_active = true;
+    showIcon = true;
     try{
         HTTPClient http;
         http.begin(String(IP) + "/tasks/" + String(id));
         int code = http.sendRequest("DELETE");
         if (code == 204){
             http.end();
-            is_active = false;
+            showIcon = false;
             return true;
         }
         else http.end();

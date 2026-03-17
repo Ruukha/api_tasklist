@@ -15,6 +15,7 @@
 #include "requests.h"
 #include "icons.h"
 #include "credentials.h"
+#include "power.h"
 
 #define BH1750_ADDR 0x23
 
@@ -31,10 +32,7 @@ StaticJsonDocument<4096> tasks;
 
 volatile const Icon* current_icon = &loading_icon;
 TaskHandle_t animationTaskHandle = NULL;
-volatile bool is_active = true;
-
-volatile static bool on = true;
-static bool valid = true;
+volatile bool showIcon = true;
 
 Button btn = {BTN_PIN, DEBOUNCE_MS, HOLD_MS};
 Button enc_btn = {ENC_SW, DEBOUNCE_MS, HOLD_MS};
@@ -42,12 +40,16 @@ ESP32Encoder enc;
 
 BH1750_WE bh1750(BH1750_ADDR);
 
-void handleEncoder(bool &menu, int &counter, int &op, StaticJsonDocument<1024> &task, char saved_id[8]) {
+volatile PowerState powerState = ACTIVE;
+
+unsigned long lastWifiTry;
+
+bool handleEncoder(bool &menu, int &counter, int &op, StaticJsonDocument<1024> &task, char saved_id[8]) {
     static int64_t lastCount = 0;
 
     int64_t now = enc.getCount();
     int64_t delta = now - lastCount;
-    if (delta == 0) return;
+    if (delta == 0) return false;
 
     lastCount = now;
 
@@ -78,6 +80,8 @@ void handleEncoder(bool &menu, int &counter, int &op, StaticJsonDocument<1024> &
         }
         show_menu(tft, task, op);
     }
+
+    return true;
 }
 
 void setup() {
@@ -104,9 +108,7 @@ void setup() {
     ledcAttach(TFT_LED, TFT_FREQ, TFT_RES);
     tft.setCursor(0, 0);
     init_screen(tft);
-    float lux = bh1750.getLux();
     setBrightness(bh1750.getLux(), TFT_LED);
-    Serial.println(lux);
     xTaskCreate(animationTask, "Animate", 2048, NULL, 1, &animationTaskHandle);
 
     init(btn);
@@ -115,50 +117,60 @@ void setup() {
     enc.setFilter(1023);
     enc.clearCount();
 
-    int wifiTries = 0;
-    do{
-        Serial.print("Trying to start WiFi...\n");
-        WiFi.begin(SSID, password);
-        Serial.printf("Wifi status: %d\n", WiFi.status());
-        wifiTries++;
-        if (wifiTries > 3) {
-            current_icon = &error_icon;
-            tft.printf("Wifi error: %d\n", WiFi.status());
-            valid = false;
-        }
-        delay(5000);
-    }while (WiFi.status() != WL_CONNECTED && wifiTries <= 3);
-    Serial.print("WiFi connected!\n");
-
+    if(!wifiConnect(SSID, password)){ 
+        current_icon = &error_icon;
+        tft.printf("Wifi error: status code %d\n", WiFi.status());
+    }
+    lastWifiTry = millis();
+    
     get_last_update(last_update);
-    if (!update(tft, tasks)) current_icon = &error_icon; else is_active = false;
+    if (!update(tft, tasks)) current_icon = &error_icon; else showIcon = false;
     last_cached_update = last_update;
 
     Serial.print("Successfully initialised!\n");
 }
 
 void loop() {  
-    // button switch
-    static float lux;
-    static ButtonState btn_state;
-    btn_state = update(btn);
+    unsigned long now = millis();
+    static unsigned long lastActivity = 0;
+    static PowerState lastPowerState = ACTIVE;
+    powerState = update(now, lastActivity);
+    
+    if (powerState != lastPowerState){
+        switch(powerState){
+            case ACTIVE:
+                Serial.println("Turning on...");
+                showIcon = true;
+                setBrightness(bh1750.getLux(), TFT_LED);
+                if (lastPowerState == SLEEP){
+                    wifiConnect(SSID, password);
+                }
+                lastActivity = now;
+                showIcon = false;
+                break;
+            case SCREEN_OFF:
+                Serial.println("Turning screen off...");
+                ledcWrite(TFT_LED, 0);
+                break;
+            case SLEEP:
+                Serial.println("Going to sleep...");
+                WiFi.disconnect(true);
+                break;
+        }
+        lastPowerState = powerState;
+    }
+
+    // button logic
+    ButtonState btn_state = update(btn);
     if (btn_state == BUTTON_HOLD){
         Serial.printf("Restarting...\n");
         ESP.restart();
     }
     else if (btn_state == BUTTON_PRESS){
-        Serial.printf("Toggling screen\n");
-        on = !on;
-        if(on){
-        //Rising edge
-            float lux = bh1750.getLux();
-            setBrightness(bh1750.getLux(), TFT_LED);
-            Serial.println(lux);
-        }
-        else ledcWrite(TFT_LED, 0);
+        lastActivity = now;
     }
 
-    if (on && valid){
+    if (powerState == ACTIVE){
         // rotary encoder logic
         static int counter = 0;
         static bool menu = false;
@@ -166,11 +178,10 @@ void loop() {
         static char saved_id[8] = "";
         static StaticJsonDocument<1024> task;
 
-        handleEncoder(menu, counter, op, task, saved_id);
+        if(handleEncoder(menu, counter, op, task, saved_id)) lastActivity = now;
 
         // rotary encoder button logic
-        static ButtonState enc_state;
-        enc_state = update(enc_btn);
+        ButtonState enc_state = update(enc_btn);
         if (enc_state == BUTTON_HOLD){
             // select task for removal
             enc_state = BUTTON_NONE;
@@ -180,7 +191,7 @@ void loop() {
             if (get_task_by_id(task, task_id)){
                 if (remove_task_id(task_id)){
                     Serial.printf("Successfully deleted task %s\n", task_id);
-                    if (!update(tft, tasks, counter)) current_icon = &error_icon; else is_active = false;
+                    if (!update(tft, tasks, counter)) current_icon = &error_icon; else showIcon = false;
                     last_cached_update = last_update;
                 }
                 else current_icon = &error_icon;
@@ -192,38 +203,56 @@ void loop() {
             Serial.print("Toggling menu\n");
             menu = !menu;
             op = 0;
-            if (!update(tft, tasks, counter, menu, op)) current_icon = &error_icon; else is_active = false;
+            if (!update(tft, tasks, counter, menu, op)) current_icon = &error_icon; else showIcon = false;
         }
 
         // data update
-        static unsigned long ms = millis();
+        static unsigned long ms = now;
 
-        if ((millis() - ms) > DELAY_MS){
-            ms = millis();
+        if (WiFi.status() != WL_CONNECTED){
+            if (now - lastWifiTry > WIFI_MS){
+                Serial.println("Trying to connect to wifi...");
+                if(!wifiConnect(SSID, password)){ 
+                    current_icon = &error_icon;
+                    tft.printf("Wifi error: status code %d\n", WiFi.status());
+                }
+                lastWifiTry = now;
+                Serial.printf("Wifi status: %d\n", WiFi.status());
+            }
+        }
+        else if ((now - ms) > DELAY_MS){
+            ms = now;
             current_icon = &loading_icon;
             get_last_update(last_update);
             if (last_update > last_cached_update){
                 Serial.printf("Last update/cache time: %lld, %lld\n", (long long)last_update, (long long)last_cached_update);
                 Serial.print("New update available\n");
 
-                if (!update(tft, tasks, counter, menu, op)) current_icon = &error_icon; else is_active = false;
+                if (!update(tft, tasks, counter, menu, op)) {current_icon = &error_icon;} else showIcon = false;
                 last_cached_update = last_update;
             }
+        }
+    }
+    else{
+        ButtonState enc_state = update(enc_btn);
+        if (enc_state == BUTTON_HOLD || enc_state == BUTTON_PRESS){
+            enc_state = BUTTON_NONE;
+            lastActivity = now;
         }
     }
 }
 
 void animationTask(void *pvParameters) {
     int current_frame = 0;
-    bool last_active = is_active;
+    bool last_active = showIcon;
     int icon_size = (sizeof(current_icon->data[0]) / sizeof(current_icon->data[0][0])) * current_icon->scale;
     while (true) {
-        if (current_icon && is_active && on) {
+        if (current_icon && showIcon && powerState == ACTIVE) {
             current_frame = (current_frame + 1) % current_icon->frames;
             draw_icon(tft, *current_icon, current_frame);
         }
-        if (!is_active && last_active && on) tft.fillRect(tft.width() - icon_size, tft.height() - icon_size, icon_size, icon_size, ILI9341_BLACK);
-        last_active = is_active;
+        if (!showIcon && last_active && powerState == ACTIVE) tft.fillRect(tft.width() - icon_size, tft.height() - icon_size, icon_size, icon_size, ILI9341_BLACK);
+        last_active = showIcon;
         vTaskDelay(FRAME_MS / portTICK_PERIOD_MS);
     }
 }

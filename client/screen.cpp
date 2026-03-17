@@ -99,5 +99,4 @@ void setBrightness(float lux, uint8_t pin){
     brightness = constrain(brightness, 20, 255);
 
     ledcWrite(pin, brightness);
-    Serial.println(brightness);
 }
