@@ -1,53 +1,59 @@
 #include "button.h"
 
-void init(Button &btn)
-{
-    btn.last_debounce = 0;
-    btn.raw_state = HIGH;
-    btn.debounced_state = HIGH;
-    btn.last_raw_state = HIGH;
-    btn.last_debounced_state = HIGH;
-    btn.ms = 0;
-    btn.hold_start = 0;
-    btn.hold = false;
-    btn.hold_sent = false;
+Button::Button(uint8_t pin, unsigned long debounce_ms, unsigned long hold_ms)
+    : pin(pin),
+    debounce_ms(debounce_ms),
+    hold_ms(hold_ms),
+    last_debounce(0),
+    raw_state(HIGH),
+    debounced_state(HIGH),
+    last_raw_state(HIGH),
+    last_debounced_state(HIGH),
+    hold_start(0),
+    hold(false),
+    hold_sent(false)
+{}
+
+bool Button::begin(){
+    pinMode(pin, INPUT_PULLUP);
+    digitalWrite(pin, HIGH);
 }
 
-ButtonState update(Button &btn)
+ButtonState Button::update()
 {
     const unsigned long now = millis();
 
     //debouncing
-    btn.raw_state = digitalRead(btn.pin);
-    if (btn.raw_state != btn.last_raw_state){
-        btn.last_debounce = now;
+    raw_state = digitalRead(pin);
+    if (raw_state != last_raw_state){
+        last_debounce = now;
     }
-    btn.last_raw_state = btn.raw_state;
+    last_raw_state = raw_state;
     
-    if ((now - btn.last_debounce) > btn.debounce_ms){
-        btn.last_debounced_state = btn.debounced_state;
-        btn.debounced_state = btn.raw_state;
+    if ((now - last_debounce) > debounce_ms){
+        last_debounced_state = debounced_state;
+        debounced_state = raw_state;
 
-        if (btn.debounced_state != btn.last_debounced_state){
+        if (debounced_state != last_debounced_state){
             //Falling edge
-            if (btn.debounced_state == LOW){
-                btn.hold_start = now;
-                btn.hold = true;
+            if (debounced_state == LOW){
+                hold_start = now;
+                hold = true;
             }
 
             //Rising edge
-            else if (btn.debounced_state == HIGH){
-                btn.hold = false;
-                if (btn.hold_sent){
-                    btn.hold_sent = false;
+            else if (debounced_state == HIGH){
+                hold = false;
+                if (hold_sent){
+                    hold_sent = false;
                     return BUTTON_NONE;    
                 }
                 return BUTTON_PRESS;
             }
         }
-        if (!btn.hold_sent && btn.hold && (now - btn.hold_start) >= btn.hold_ms){
-            btn.hold_start = now;
-            btn.hold_sent = true;
+        if (!hold_sent && hold && (now - hold_start) >= hold_ms){
+            hold_start = now;
+            hold_sent = true;
             return BUTTON_HOLD;
         }
     }
