@@ -19,7 +19,7 @@ bool Button::begin(){
     digitalWrite(pin, HIGH);
 }
 
-ButtonState Button::update()
+ButtonState Button::read()
 {
     const unsigned long now = millis();
 

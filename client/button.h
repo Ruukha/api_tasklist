@@ -25,5 +25,5 @@ class Button {
     public:
         Button(uint8_t pin, unsigned long debounce_ms, unsigned long hold_ms);
         bool begin();
-        ButtonState update();
+        ButtonState read();
 };
