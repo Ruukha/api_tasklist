@@ -7,7 +7,7 @@ struct Icon {
     const uint8_t width;
     const uint8_t height;
     const uint8_t scale;
-    const int frame_ms = DEFAULT_FRAME_MS;
+    const int frame_ms = Config::DEFAULT_FRAME_MS;
 };
 
 namespace Icons{

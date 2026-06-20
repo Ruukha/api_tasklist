@@ -6,8 +6,8 @@
 #include "config.h"
 
 LightSensor lightSensor;
-Button button{BTN, DEBOUNCE_MS, HOLD_MS};
-Button encoderButton{ENC_SW, DEBOUNCE_MS, HOLD_MS};
+Button button{Pins::BTN, Config::DEBOUNCE_MS, Config::HOLD_MS};
+Button encoderButton{Pins::ENC_SW, Config::DEBOUNCE_MS, Config::HOLD_MS};
 
 void TaskApp::begin(){
     lightSensor.begin();

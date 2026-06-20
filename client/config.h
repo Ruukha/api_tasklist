@@ -1,20 +1,21 @@
 #pragma once
 #include <Arduino.h>
 
-//user variables
-extern const int TEXT_SIZE;
-extern const int HOLD_MS;
-extern const int TIMEOUT_MS;
-extern const int SLEEP_MS;
+namespace Config{
+    //user variables
+    inline constexpr int TEXT_SIZE = 3; //Default: 3
+    inline constexpr int HOLD_MS = 3000; //Default: 3000
+    inline constexpr int TIMEOUT_MS = 60000; //Default: 60000
+    inline constexpr int SLEEP_MS = 5 * 60000; //Default: 5 minutes (5 * 60000)
 
-//server variables
-extern const char* IP; //server IP
+    //server variables
+    inline constexpr char* IP = "https://ruukha.pythonanywhere.com"; //server IP
 
-//other variables
-extern const int DEBOUNCE_MS;
-extern const int DELAY_MS;
-extern const int DEFAULT_FRAME_MS;
-extern const int TFT_FREQ;
-extern const int TFT_RES;
-extern const int WIFI_MS;
-extern int tasks_cap;
+    //other variables (do NOT touch unless you know what you're doing)
+    inline constexpr int DEBOUNCE_MS = 50; //default: 50
+    inline constexpr int DELAY_MS = 60000; //default: 60000
+    inline constexpr int DEFAULT_FRAME_MS = 400; //default: 400
+    inline constexpr int TFT_FREQ = 5000; //default: 5000
+    inline constexpr int TFT_RES = 8; //default: 8
+    inline constexpr int WIFI_MS = 5000; //default: 5000
+}
