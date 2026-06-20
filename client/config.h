@@ -13,7 +13,7 @@ extern const char* IP; //server IP
 //other variables
 extern const int DEBOUNCE_MS;
 extern const int DELAY_MS;
-extern const int FRAME_MS;
+extern const int DEFAULT_FRAME_MS;
 extern const int TFT_FREQ;
 extern const int TFT_RES;
 extern const int WIFI_MS;

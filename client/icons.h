@@ -1,45 +1,16 @@
 #pragma once
+#include "config.h"
 
 struct Icon {
-    int frames;
-    int scale;
-    int data[][5][5];
+    const uint8_t* data;
+    const uint8_t frames;
+    const uint8_t width;
+    const uint8_t height;
+    const uint8_t scale;
+    const int frame_ms = DEFAULT_FRAME_MS;
 };
 
-const Icon paw = {
-    2, 5,
-    {{
-        {0, 0, 1, 0, 0},
-        {1, 0, 0, 0, 1},
-        {0, 0, 1, 0, 0},
-        {0, 1, 1, 1, 0},
-        {0, 0, 0, 0, 0}
-    },
-    {
-        {0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0},
-        {1, 0, 0, 0, 1},
-        {0, 0, 1, 0, 0},
-        {0, 1, 1, 1, 0}
-    }}
-};
-
-const Icon loading_icon = paw;
-
-const Icon error_icon = {
-    2, 5,
-    {{
-        {1, 0, 0, 0, 1},
-        {0, 1, 0, 1, 0},
-        {0, 0, 1, 0, 0},
-        {0, 1, 0, 1, 0},
-        {1, 0, 0, 0, 1}
-    },
-    {
-        {0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0}
-    }}
-};
+namespace Icons{
+    extern const Icon loading;
+    extern const Icon error;
+}
