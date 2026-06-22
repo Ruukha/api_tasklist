@@ -1,6 +1,8 @@
 #pragma once
 #include <ESP32Encoder.h>
 
+#include "initResult.h"
+
 enum Direction{
     CCW = -1,
     None = 0,
@@ -16,6 +18,6 @@ class Encoder{
 
     public:
         Encoder(uint8_t pin_dt, uint8_t pin_clk);
-        bool begin();
+        InitResult begin();
         Direction read();
 };

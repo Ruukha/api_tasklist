@@ -8,12 +8,12 @@ Encoder::Encoder(uint8_t pin_dt, uint8_t pin_clk)
     lastCount(0)
 {}
 
-bool Encoder::begin(){
+InitResult Encoder::begin(){
     enc.attachHalfQuad(pin_dt, pin_clk);
     enc.setFilter(1023);
     enc.clearCount();
 
-    return true;
+    return {InitStatus::OK, "Rotary encoder"};
 }
 
 Direction Encoder::read(){

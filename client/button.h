@@ -1,10 +1,12 @@
 #pragma once
 #include <Arduino.h>
 
-enum ButtonState {
-    BUTTON_NONE,
-    BUTTON_PRESS,
-    BUTTON_HOLD
+#include "initResult.h"
+
+enum class ButtonState {
+    NONE,
+    PRESS,
+    HOLD
 };
 
 class Button {
@@ -24,6 +26,6 @@ class Button {
     
     public:
         Button(uint8_t pin, unsigned long debounce_ms, unsigned long hold_ms);
-        bool begin();
+        InitResult begin();
         ButtonState read();
 };

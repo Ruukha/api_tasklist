@@ -14,9 +14,11 @@ Button::Button(uint8_t pin, unsigned long debounce_ms, unsigned long hold_ms)
     hold_sent(false)
 {}
 
-bool Button::begin(){
+InitResult Button::begin(){
     pinMode(pin, INPUT_PULLUP);
     digitalWrite(pin, HIGH);
+
+    return {InitStatus::OK, "Button"};
 }
 
 ButtonState Button::read()
@@ -46,17 +48,17 @@ ButtonState Button::read()
                 hold = false;
                 if (hold_sent){
                     hold_sent = false;
-                    return BUTTON_NONE;    
+                    return ButtonState::NONE;    
                 }
-                return BUTTON_PRESS;
+                return ButtonState::PRESS;
             }
         }
         if (!hold_sent && hold && (now - hold_start) >= hold_ms){
             hold_start = now;
             hold_sent = true;
-            return BUTTON_HOLD;
+            return ButtonState::HOLD;
         }
     }
 
-    return BUTTON_NONE;
+    return ButtonState::NONE;
 }

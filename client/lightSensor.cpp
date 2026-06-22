@@ -9,13 +9,11 @@ LightSensor::LightSensor()
     : sensor(BH1750_ADDR)
 {}
 
-bool LightSensor::begin(){
-    bool success = sensor.init();
-
-    Serial.print("Light sensor init: ");
-    Serial.println(success ? "OK" : "ERROR");
-
-    return success;
+InitResult LightSensor::begin(){
+    if (sensor.init()){
+        return {InitStatus::OK, "Light sensor"};
+    }
+    return {InitStatus::Warning, "Light sensor", "Not detected"};
 }
 
 float LightSensor::read(){
