@@ -1,4 +1,6 @@
 #pragma once
 
-extern const char* SSID;
-extern const char* password;
+namespace Credentials{
+    inline constexpr char* SSID = "example"; //WiFi name
+    inline constexpr char* password = "1234"; //WiFi password
+}
