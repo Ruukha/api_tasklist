@@ -17,5 +17,6 @@ namespace Config{
     inline constexpr int DEFAULT_FRAME_MS = 400; //default: 400
     inline constexpr int TFT_LED_FREQ = 5000; //default: 5000
     inline constexpr int TFT_LED_RES = 8; //default: 8
-    inline constexpr int WIFI_MS = 5000; //default: 5000
+    inline constexpr int WIFI_RETRY_MS = 5000; //default: 5000
+    inline constexpr int WIFI_TIMEOUT_MS = 10000; //default: 10000
 }
