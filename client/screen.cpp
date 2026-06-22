@@ -3,100 +3,84 @@
 #include "screen.h"
 #include "config.h"
 #include "icons.h"
+#include "initResult.h"
 
-void test(Adafruit_ILI9341 &tft) {
-    Serial.println("Adafruit test");
-    delay(500);
+Screen::Screen(const uint8_t pin_cs, const uint8_t pin_rst, const uint8_t pin_dc, const uint8_t pin_sdi, const uint8_t pin_sck, const uint8_t pin_led)
+    : pin_cs(pin_cs),
+    pin_rst(pin_rst),
+    pin_dc(pin_dc),
+    pin_sdi(pin_sdi),
+    pin_sck(pin_sck),
+    pin_led(pin_led),
+    tft(pin_cs, pin_dc, pin_rst)
+{}
+
+InitResult Screen::begin(){
+    pinMode(pin_cs, OUTPUT);
+    pinMode(pin_rst, OUTPUT);
+    pinMode(pin_dc, OUTPUT);
+    pinMode(pin_sdi, OUTPUT);
+    pinMode(pin_sck, OUTPUT);
+    pinMode(pin_led, OUTPUT);
+    ledcAttach(pin_led, Config::TFT_LED_FREQ, Config::TFT_LED_RES);
+ 
     tft.begin();
     tft.setRotation(2);
     tft.fillScreen(ILI9341_BLACK);
     tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(3);
+    tft.setTextSize(1);
     tft.setCursor(0, 0);
+
+    return {InitStatus::OK, "Screen", "Cannot verify"};
+}
+
+int16_t Screen::getHeight() const {
+    return tft.height();
+}
+
+int16_t Screen::getWidth() const {
+    return tft.width();
+}
+
+void Screen::setBrightness(uint8_t brightness){
+    //normalisation to do in taskApp:
+    // float normalised = log10(lux + 1) / log10(1000);
+    // int brightness = normalised * 255;
+    // brightness = constrain(brightness, 20, 255);
+    
+    ledcWrite(pin_led, brightness);
+}
+
+void Screen::println(const String &text){
+    //tft.println("- " + name); for tasks
+    tft.println(text);
+}
+
+void Screen::clear(){
     tft.fillScreen(ILI9341_BLACK);
     tft.setCursor(0, 0);
-    tft.println("Hello!");
-    Serial.println("Draw complete");
 }
 
-void init_screen(Adafruit_ILI9341 &tft){
-    tft.begin();
-    tft.setRotation(2);
-    tft.fillScreen(ILI9341_BLACK);
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(TEXT_SIZE);
-    tft.setCursor(0, 0);
-}
+void Screen::drawIcon(const Icon& icon, const uint8_t frame, const int x0, const int y0){
+    const int frameSize = icon.width * icon.height;
 
-void show_menu(Adafruit_ILI9341 &tft, StaticJsonDocument<1024> &task, int op){
-    Serial.print("Showing menu...\n");
+    for (uint8_t y = 0; y < icon.height; y++){
+        for (uint8_t x = 0; x < icon.width; x++){
+            int index = frame * frameSize + y * icon.width + x;
 
-    tft.setCursor(0, 0);
-    tft.fillScreen(ILI9341_BLACK);
-    tft.print(task["id"].as<const char*>());
-    tft.print(": ");
-    tft.println(task["name"].as<const char*>());
-    tft.println();
-
-    switch (op){
-        case 0:
-        tft.println(task["description"].as<const char*>());
-        break;
-
-        case 1:
-        tft.print("Added:\n");
-        tft.print(task["date"].as<const char*>());
-        break;
-
-        case 2:
-        tft.print("Expires:\n");
-        tft.print(task["expiry"].as<const char*>());
-        break;
-
-        default:
-        Serial.print("Option not in menu");
-        break;
-    }
-}
-
-void draw_tasks(Adafruit_ILI9341 &tft, StaticJsonDocument<2048> &doc){
-    tft.setCursor(0, 0);
-    tft.fillScreen(ILI9341_BLACK);
-    int i = 0;
-    for (JsonPair kv : doc.as<JsonObject>()){
-        String id = String(kv.key().c_str());
-        String name = String(kv.value().as<const char*>());
-
-        draw_task(id, name, tft);
-        if (i >= tasks_cap) break;
-
-        i++;
-    }
-}
-
-void draw_task(String &id, String &name, Adafruit_ILI9341 &tft)
-{
-    Serial.println("Drawing task: " + id + ": " + name);
-    tft.println("- " + name);
-}
-
-void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame){
-    int icon_size = (sizeof(icon.data[0]) / sizeof(icon.data[0][0]));
-    int icon_scale = icon.scale;
-    int x = tft.width() - icon_size*icon_scale;
-    int y = tft.height() - icon_size*icon_scale;
-    for(int i = 0; i < icon_size; i++){
-        for(int j = 0; j < icon_size; j++){
-            uint16_t color = icon.data[frame][i][j] ? ILI9341_WHITE : ILI9341_BLACK;
-            tft.fillRect(x + j * icon_scale, y + i * icon_scale, icon_scale, icon_scale, color);
+            if (icon.data[index]) {
+                tft.fillRect(
+                    x0 + x * icon.scale,
+                    y0 + y * icon.scale,
+                    icon.scale, 
+                    icon.scale,
+                    ILI9341_WHITE
+                );
+            }
         }
     }
 }
 
-void setBrightness(float lux, uint8_t pin){
-    float normalised = log10(lux + 1) / log10(1000);
-    int brightness = normalised * 255;
-    brightness = constrain(brightness, 20, 255);
-
-    ledcWrite(pin, brightness);
+void Screen::setTextSize(uint8_t size){
+    tft.setTextSize(size);
 }

@@ -8,7 +8,7 @@ TaskApp app;
 void setup(){
     Serial.begin(115200);
     
-    Wire.begin(I2C_SDA, I2C_SCL);
+    Wire.begin(Pins::I2C_SDA, Pins::I2C_SCL);
     Wire.setClock(100000);
     app.begin();
 }

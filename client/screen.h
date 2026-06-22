@@ -2,11 +2,26 @@
 #include <Arduino.h>
 #include <Adafruit_ILI9341.h>
 #include "icons.h"
+#include "initResult.h"
 
-void test(Adafruit_ILI9341 &tft);
-void show_menu(Adafruit_ILI9341 &tft, StaticJsonDocument<1024> &task, int op=0);
-void draw_task(String &id, String &name, Adafruit_ILI9341 &tft);
-void draw_tasks(Adafruit_ILI9341 &tft, StaticJsonDocument<2048> &doc);
-void init_screen(Adafruit_ILI9341 &tft);
-void draw_icon(Adafruit_ILI9341 &tft, const volatile Icon& icon, int frame);
-void setBrightness(float lux, uint8_t pin);
+class Screen{
+    private:
+        Adafruit_ILI9341 tft;
+        const uint8_t pin_cs;
+        const uint8_t pin_rst;
+        const uint8_t pin_dc;
+        const uint8_t pin_sdi;
+        const uint8_t pin_sck;
+        const uint8_t pin_led;
+    
+    public:
+        Screen(const uint8_t pin_cs, const uint8_t pin_rst, const uint8_t pin_dc, const uint8_t pin_sdi, const uint8_t pin_sck, const uint8_t pin_led); 
+        InitResult begin(); 
+        int16_t getHeight() const;
+        int16_t getWidth() const;
+        void setBrightness(uint8_t brightness);
+        void println(const String &text);
+        void clear();
+        void drawIcon(const Icon& icon, const uint8_t frame, const int x0, const int y0);
+        void setTextSize(uint8_t size);
+};
