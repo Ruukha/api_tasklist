@@ -42,12 +42,7 @@ int16_t Screen::getWidth() const {
     return tft.width();
 }
 
-void Screen::setBrightness(uint8_t brightness){
-    //normalisation to do in taskApp:
-    // float normalised = log10(lux + 1) / log10(1000);
-    // int brightness = normalised * 255;
-    // brightness = constrain(brightness, 20, 255);
-    
+void Screen::setBrightness(uint8_t brightness){    
     ledcWrite(pin_led, brightness);
 }
 

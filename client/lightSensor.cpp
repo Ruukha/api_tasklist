@@ -17,5 +17,11 @@ InitResult LightSensor::begin(){
 }
 
 float LightSensor::read(){
-    return sensor.getLux();
+    float lux = sensor.getLux();
+
+    float normalised = log10(lux + 1) / log10(1000);
+    int brightness = normalised * 255;
+    brightness = constrain(brightness, 20, 255);
+    
+    return brightness;
 }

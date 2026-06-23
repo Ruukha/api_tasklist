@@ -7,6 +7,9 @@
 #include "encoder.h"
 #include "screen.h"
 #include "initHandler.h"
+#include "wifiManager.h"
+#include "powerManager.h"
+#include "UIManager.h"
 
 LightSensor lightSensor;
 Button button{Pins::BTN, Config::DEBOUNCE_MS, Config::HOLD_MS};
@@ -14,7 +17,10 @@ Button encoderButton{Pins::ENC_SW, Config::DEBOUNCE_MS, Config::HOLD_MS};
 Encoder encoder{Pins::ENC_DT, Pins::ENC_CLK};
 Screen screen{Pins::TFT_CS, Pins::TFT_RST, Pins::TFT_DC, Pins::TFT_SDI, Pins::TFT_SCK, Pins::TFT_LED};
 
-InitHandler initHandler(screen);
+InitHandler initHandler{screen};
+WifiManager wifi;
+PowerManager power{screen, wifi, lightSensor};
+
 
 void TaskApp::begin(){
     initHandler.handle(screen.begin());
